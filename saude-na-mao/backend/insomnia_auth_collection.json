@@ -1,0 +1,100 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-03-30T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2024.1.0",
+  "resources": [
+    {
+      "_id": "wrk_1",
+      "name": "Saúde na Mão Auth API",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_1",
+      "parentId": "wrk_1",
+      "_type": "environment",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:3000/api/v1/auth"
+      }
+    },
+    {
+      "_id": "req_register",
+      "parentId": "wrk_1",
+      "_type": "request",
+      "name": "Register",
+      "method": "POST",
+      "url": "{{ base_url }}/register",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Usuário Teste\",\n  \"email\": \"teste@example.com\",\n  \"telefone\": \"11999999999\",\n  \"cpf\": \"12345678901\",\n  \"senha\": \"Senha@123\"\n}"
+      },
+      "parameters": [],
+      "headers": [{ "name": "Content-Type", "value": "application/json" }]
+    },
+    {
+      "_id": "req_login",
+      "parentId": "wrk_1",
+      "_type": "request",
+      "name": "Login",
+      "method": "POST",
+      "url": "{{ base_url }}/login",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"teste@example.com\",\n  \"senha\": \"Senha@123\"\n}"
+      },
+      "parameters": [],
+      "headers": [{ "name": "Content-Type", "value": "application/json" }]
+    },
+    {
+      "_id": "req_refresh_token",
+      "parentId": "wrk_1",
+      "_type": "request",
+      "name": "Refresh Token",
+      "method": "POST",
+      "url": "{{ base_url }}/refresh-token",
+      "body": {},
+      "parameters": [],
+      "headers": []
+    },
+    {
+      "_id": "req_logout",
+      "parentId": "wrk_1",
+      "_type": "request",
+      "name": "Logout",
+      "method": "POST",
+      "url": "{{ base_url }}/logout",
+      "body": {},
+      "parameters": [],
+      "headers": []
+    },
+    {
+      "_id": "req_forgot_password",
+      "parentId": "wrk_1",
+      "_type": "request",
+      "name": "Forgot Password",
+      "method": "POST",
+      "url": "{{ base_url }}/forgot-password",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"teste@example.com\"\n}"
+      },
+      "parameters": [],
+      "headers": [{ "name": "Content-Type", "value": "application/json" }]
+    },
+    {
+      "_id": "req_reset_password",
+      "parentId": "wrk_1",
+      "_type": "request",
+      "name": "Reset Password",
+      "method": "POST",
+      "url": "{{ base_url }}/reset-password/:token",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"novaSenha\": \"NovaSenha@123\"\n}"
+      },
+      "parameters": [],
+      "headers": [{ "name": "Content-Type", "value": "application/json" }]
+    }
+  ]
+}
