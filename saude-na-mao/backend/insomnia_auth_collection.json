@@ -95,6 +95,779 @@
       },
       "parameters": [],
       "headers": [{ "name": "Content-Type", "value": "application/json" }]
+    },
+    {
+      "_id": "wrk_perfil",
+      "_type": "workspace",
+      "name": "Saúde na Mão - Perfil e Endereços",
+      "description": "Testes do Módulo 2 - Perfil do Usuário e Gestão de Endereços"
+    },
+    {
+      "_id": "env_perfil",
+      "parentId": "wrk_perfil",
+      "_type": "environment",
+      "name": "Variables",
+      "data": {
+        "base_url": "http://localhost:3000/api/v1/users",
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZDExMTIxZTY1ZTgxZjcxMTA0YjUxYSIsInRpcG8iOiJjbGllbnRlIiwiaWF0IjoxNzc1MzA5MTI4LCJleHAiOjE3NzUzMTI3Mjh9.Skla81iEp7mhdwjpVWAVaGV7LkLSF8x7PURVumIvFLk",
+        "addressId": "{{cole_o_id_do_endereco}}",
+        "missingAddressId": "507f1f77bcf86cd799439011",
+        "invalidUploadPath": "C:/Users/popch/Downloads/Projeto 4 - SSM/saude-na-mao/backend/insomnia_auth_collection.json",
+        "largeUploadPath": "C:/caminho/para/uma-imagem-maior-que-5mb.jpg"
+      }
+    },
+    {
+      "_id": "req_profile_get",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "1. GET /profile - Ver meu perfil",
+      "method": "GET",
+      "url": "{{ base_url }}/profile",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ]
+    },
+    {
+      "_id": "req_profile_patch",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "2. PATCH /profile - Atualizar nome e telefone",
+      "method": "PATCH",
+      "url": "{{ base_url }}/profile",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Matheus Matias Atualizado\",\n  \"telefone\": \"62988887777\"\n}"
+      }
+    },
+    {
+      "_id": "req_cep",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "3. GET /cep/01310100 - Buscar CEP (Av. Paulista)",
+      "method": "GET",
+      "url": "{{ base_url }}/cep/01310100",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ]
+    },
+    {
+      "_id": "req_address_cep_auto",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "4. POST /addresses - Adicionar com CEP automático",
+      "method": "POST",
+      "url": "{{ base_url }}/addresses",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cep\": \"01310100\",\n  \"numero\": \"1000\",\n  \"apelido\": \"Casa\"\n}"
+      }
+    },
+    {
+      "_id": "req_address_completo",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "5. POST /addresses - Adicionar endereço completo",
+      "method": "POST",
+      "url": "{{ base_url }}/addresses",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cep\": \"01310100\",\n  \"numero\": \"500\",\n  \"complemento\": \"Apto 501\",\n  \"apelido\": \"Trabalho\",\n  \"logradouro\": \"Avenida Paulista\",\n  \"bairro\": \"Bela Vista\",\n  \"cidade\": \"São Paulo\",\n  \"estado\": \"SP\"\n}"
+      }
+    },
+    {
+      "_id": "req_addresses_list",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "6. GET /addresses - Listar todos os endereços",
+      "method": "GET",
+      "url": "{{ base_url }}/addresses",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ]
+    },
+    {
+      "_id": "req_address_patch",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "7. PATCH /addresses/:id - Atualizar apelido",
+      "method": "PATCH",
+      "url": "{{ base_url }}/addresses/{{ addressId }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"apelido\": \"Trabalho\"\n}"
+      }
+    },
+    {
+      "_id": "req_address_default",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "8. PATCH /addresses/:id/default - Definir como padrão",
+      "method": "PATCH",
+      "url": "{{ base_url }}/addresses/{{ addressId }}/default",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ]
+    },
+    {
+      "_id": "req_address_delete",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "9. DELETE /addresses/:id - Remover endereço",
+      "method": "DELETE",
+      "url": "{{ base_url }}/addresses/{{ addressId }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ]
+    },
+    {
+      "_id": "req_orders",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "10. GET /orders - Histórico de pedidos",
+      "method": "GET",
+      "url": "{{ base_url }}/orders?page=1&limit=5",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ]
+    },
+    {
+      "_id": "req_profile_no_token",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "11. Erro - GET /profile sem token",
+      "method": "GET",
+      "url": "{{ base_url }}/profile",
+      "headers": []
+    },
+    {
+      "_id": "req_profile_patch_invalid",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "12. Erro - PATCH /profile com nome vazio",
+      "method": "PATCH",
+      "url": "{{ base_url }}/profile",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"\",\n  \"telefone\": \"62988887777\"\n}"
+      }
+    },
+    {
+      "_id": "req_cep_invalid",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "13. Erro - GET /cep com CEP inválido",
+      "method": "GET",
+      "url": "{{ base_url }}/cep/123",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ]
+    },
+    {
+      "_id": "req_cep_not_found",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "14. Erro - GET /cep com CEP inexistente",
+      "method": "GET",
+      "url": "{{ base_url }}/cep/00000000",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ]
+    },
+    {
+      "_id": "req_address_invalid_cep",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "15. Erro - POST /addresses com CEP inválido",
+      "method": "POST",
+      "url": "{{ base_url }}/addresses",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cep\": \"123\",\n  \"numero\": \"1000\"\n}"
+      }
+    },
+    {
+      "_id": "req_address_empty_number",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "16. Erro - POST /addresses com número vazio",
+      "method": "POST",
+      "url": "{{ base_url }}/addresses",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cep\": \"01310100\",\n  \"numero\": \"\"\n}"
+      }
+    },
+    {
+      "_id": "req_address_invalid_id_patch",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "17. Erro - PATCH /addresses com id inválido",
+      "method": "PATCH",
+      "url": "{{ base_url }}/addresses/id-invalido",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"apelido\": \"Trabalho\"\n}"
+      }
+    },
+    {
+      "_id": "req_address_limit",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "18. Erro - POST /addresses acima do limite (após 10 ativos)",
+      "method": "POST",
+      "url": "{{ base_url }}/addresses",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "description": "Execute somente depois de o usuário já ter 10 endereços ativos. Antes disso, a API deve adicionar o endereço com sucesso.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cep\": \"01310100\",\n  \"numero\": \"1100\",\n  \"apelido\": \"Limite\"\n}"
+      }
+    },
+    {
+      "_id": "req_address_not_found_patch",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "19. Erro - PATCH /addresses com id inexistente",
+      "method": "PATCH",
+      "url": "{{ base_url }}/addresses/{{ missingAddressId }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"apelido\": \"Endereco Inexistente\"\n}"
+      }
+    },
+    {
+      "_id": "req_address_not_found_default",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "20. Erro - PATCH /addresses/:id/default com id inexistente",
+      "method": "PATCH",
+      "url": "{{ base_url }}/addresses/{{ missingAddressId }}/default",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ]
+    },
+    {
+      "_id": "req_address_not_found_delete",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "21. Erro - DELETE /addresses com id inexistente",
+      "method": "DELETE",
+      "url": "{{ base_url }}/addresses/{{ missingAddressId }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ]
+    },
+    {
+      "_id": "req_profile_upload_invalid_type",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "22. Erro - PATCH /profile com arquivo inválido",
+      "method": "PATCH",
+      "url": "{{ base_url }}/profile",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ],
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          { "name": "nome", "value": "Teste Upload" },
+          {
+            "name": "foto",
+            "type": "file",
+            "fileName": "{{ invalidUploadPath }}"
+          }
+        ]
+      }
+    },
+    {
+      "_id": "req_profile_upload_too_large",
+      "parentId": "wrk_perfil",
+      "_type": "request",
+      "name": "23. Erro - PATCH /profile com arquivo maior que 5MB",
+      "method": "PATCH",
+      "url": "{{ base_url }}/profile",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ],
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          { "name": "nome", "value": "Teste Upload Grande" },
+          {
+            "name": "foto",
+            "type": "file",
+            "fileName": "{{ largeUploadPath }}"
+          }
+        ]
+      }
+    },
+    {
+      "_id": "wrk_catalogo",
+      "_type": "workspace",
+      "name": "Saúde na Mão - Catálogo de Farmácias e Produtos",
+      "description": "Testes do Módulo 3 - Farmácias, busca geoespacial e catálogo de produtos"
+    },
+    {
+      "_id": "env_catalogo",
+      "parentId": "wrk_catalogo",
+      "_type": "environment",
+      "name": "Variables",
+      "data": {
+        "base_farmacias": "http://localhost:3000/api/v1/farmacias",
+        "base_produtos": "http://localhost:3000/api/v1/produtos",
+        "adminToken": "SUBSTITUA_PELO_TOKEN_DO_ADMIN",
+        "pharmacyId": "SUBSTITUA_PELO_ID_DA_FARMACIA",
+        "productId": "SUBSTITUA_PELO_ID_DO_PRODUTO",
+        "missingId": "507f1f77bcf86cd799439011"
+      }
+    },
+    {
+      "_id": "fld_farmacias",
+      "parentId": "wrk_catalogo",
+      "_type": "request_group",
+      "name": "Farmácias"
+    },
+    {
+      "_id": "cat_f01",
+      "parentId": "fld_farmacias",
+      "_type": "request",
+      "name": "1. GET / - Listar todas as farmácias",
+      "method": "GET",
+      "url": "{{ base_farmacias }}",
+      "headers": [],
+      "parameters": []
+    },
+    {
+      "_id": "cat_f02",
+      "parentId": "fld_farmacias",
+      "_type": "request",
+      "name": "2. GET /?search=Central - Buscar farmácia por nome",
+      "method": "GET",
+      "url": "{{ base_farmacias }}",
+      "headers": [],
+      "parameters": [{ "name": "search", "value": "Central" }]
+    },
+    {
+      "_id": "cat_f03",
+      "parentId": "fld_farmacias",
+      "_type": "request",
+      "name": "3. GET /?page=1&limit=5 - Listar com paginação",
+      "method": "GET",
+      "url": "{{ base_farmacias }}",
+      "headers": [],
+      "parameters": [
+        { "name": "page", "value": "1" },
+        { "name": "limit", "value": "5" }
+      ]
+    },
+    {
+      "_id": "cat_f04",
+      "parentId": "fld_farmacias",
+      "_type": "request",
+      "name": "4. GET /nearby - Farmácias próximas (Centro de Goiânia)",
+      "method": "GET",
+      "url": "{{ base_farmacias }}/nearby",
+      "headers": [],
+      "parameters": [
+        { "name": "longitude", "value": "-49.2647" },
+        { "name": "latitude", "value": "-16.6869" },
+        { "name": "raio", "value": "3000" }
+      ]
+    },
+    {
+      "_id": "cat_f05",
+      "parentId": "fld_farmacias",
+      "_type": "request",
+      "name": "5. GET /nearby - Raio maior (5km)",
+      "method": "GET",
+      "url": "{{ base_farmacias }}/nearby",
+      "headers": [],
+      "parameters": [
+        { "name": "longitude", "value": "-49.252" },
+        { "name": "latitude", "value": "-16.7081" },
+        { "name": "raio", "value": "5000" }
+      ]
+    },
+    {
+      "_id": "cat_f06",
+      "parentId": "fld_farmacias",
+      "_type": "request",
+      "name": "6. GET /:id - Farmácia por ID",
+      "method": "GET",
+      "url": "{{ base_farmacias }}/{{ pharmacyId }}",
+      "headers": [],
+      "parameters": []
+    },
+    {
+      "_id": "cat_f07",
+      "parentId": "fld_farmacias",
+      "_type": "request",
+      "name": "7. GET /:id/products - Produtos da farmácia",
+      "method": "GET",
+      "url": "{{ base_farmacias }}/{{ pharmacyId }}/products",
+      "headers": [],
+      "parameters": [
+        { "name": "page", "value": "1" },
+        { "name": "limit", "value": "10" }
+      ]
+    },
+    {
+      "_id": "cat_f08",
+      "parentId": "fld_farmacias",
+      "_type": "request",
+      "name": "8. POST / - Criar farmácia (admin)",
+      "method": "POST",
+      "url": "{{ base_farmacias }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ adminToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Farmácia Teste\",\n  \"cnpj\": \"98765432000199\",\n  \"telefone\": \"6299998888\",\n  \"email\": \"teste@farmateste.com.br\",\n  \"logradouro\": \"Rua das Flores\",\n  \"numero\": \"100\",\n  \"bairro\": \"Setor Oeste\",\n  \"cidade\": \"Goiânia\",\n  \"estado\": \"GO\",\n  \"cep\": \"74120050\",\n  \"longitude\": -49.27,\n  \"latitude\": -16.68,\n  \"horario_funcionamento\": \"Seg-Sex 08h-20h\"\n}"
+      },
+      "parameters": []
+    },
+    {
+      "_id": "cat_f09",
+      "parentId": "fld_farmacias",
+      "_type": "request",
+      "name": "9. PATCH /:id - Atualizar farmácia (admin)",
+      "method": "PATCH",
+      "url": "{{ base_farmacias }}/{{ pharmacyId }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ adminToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"avaliacao\": 4.9,\n  \"horario_funcionamento\": \"Seg-Dom 07h-23h\"\n}"
+      },
+      "parameters": []
+    },
+    {
+      "_id": "cat_f10",
+      "parentId": "fld_farmacias",
+      "_type": "request",
+      "name": "10. Erro - GET /nearby sem latitude",
+      "method": "GET",
+      "url": "{{ base_farmacias }}/nearby",
+      "headers": [],
+      "parameters": [{ "name": "longitude", "value": "-49.2647" }],
+      "description": "Esperado: 400 - Latitude é obrigatória"
+    },
+    {
+      "_id": "cat_f11",
+      "parentId": "fld_farmacias",
+      "_type": "request",
+      "name": "11. Erro - GET /nearby com coordenadas inválidas",
+      "method": "GET",
+      "url": "{{ base_farmacias }}/nearby",
+      "headers": [],
+      "parameters": [
+        { "name": "longitude", "value": "abc" },
+        { "name": "latitude", "value": "xyz" }
+      ],
+      "description": "Esperado: 400 - Longitude/Latitude deve ser um número válido"
+    },
+    {
+      "_id": "cat_f12",
+      "parentId": "fld_farmacias",
+      "_type": "request",
+      "name": "12. Erro - GET /:id com ID inexistente",
+      "method": "GET",
+      "url": "{{ base_farmacias }}/{{ missingId }}",
+      "headers": [],
+      "parameters": [],
+      "description": "Esperado: 404 - Farmácia não encontrada"
+    },
+    {
+      "_id": "cat_f13",
+      "parentId": "fld_farmacias",
+      "_type": "request",
+      "name": "13. Erro - POST / sem token (não autenticado)",
+      "method": "POST",
+      "url": "{{ base_farmacias }}",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Farmácia Teste\",\n  \"cnpj\": \"98765432000199\"\n}"
+      },
+      "parameters": [],
+      "description": "Esperado: 401 - Não autorizado"
+    },
+    {
+      "_id": "fld_produtos",
+      "parentId": "wrk_catalogo",
+      "_type": "request_group",
+      "name": "Produtos"
+    },
+    {
+      "_id": "cat_p01",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "1. GET / - Listar todos os produtos",
+      "method": "GET",
+      "url": "{{ base_produtos }}",
+      "headers": [],
+      "parameters": [
+        { "name": "page", "value": "1" },
+        { "name": "limit", "value": "10" }
+      ]
+    },
+    {
+      "_id": "cat_p02",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "2. GET /?q=paracetamol - Busca por texto",
+      "method": "GET",
+      "url": "{{ base_produtos }}",
+      "headers": [],
+      "parameters": [{ "name": "q", "value": "paracetamol" }]
+    },
+    {
+      "_id": "cat_p03",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "3. GET /?q=vitamina - Busca por vitamina",
+      "method": "GET",
+      "url": "{{ base_produtos }}",
+      "headers": [],
+      "parameters": [{ "name": "q", "value": "vitamina" }]
+    },
+    {
+      "_id": "cat_p04",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "4. GET /?categoria=Analgésico - Filtro por categoria",
+      "method": "GET",
+      "url": "{{ base_produtos }}",
+      "headers": [],
+      "parameters": [{ "name": "categoria", "value": "Analgésico" }]
+    },
+    {
+      "_id": "cat_p05",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "5. GET /?preco_min=5&preco_max=15 - Filtro por faixa de preço",
+      "method": "GET",
+      "url": "{{ base_produtos }}",
+      "headers": [],
+      "parameters": [
+        { "name": "preco_min", "value": "5" },
+        { "name": "preco_max", "value": "15" }
+      ]
+    },
+    {
+      "_id": "cat_p06",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "6. GET /?controlado=true - Apenas medicamentos controlados",
+      "method": "GET",
+      "url": "{{ base_produtos }}",
+      "headers": [],
+      "parameters": [{ "name": "controlado", "value": "true" }]
+    },
+    {
+      "_id": "cat_p07",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "7. GET /?sort=preco - Ordenar por preço (ASC)",
+      "method": "GET",
+      "url": "{{ base_produtos }}",
+      "headers": [],
+      "parameters": [{ "name": "sort", "value": "preco" }]
+    },
+    {
+      "_id": "cat_p08",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "8. GET /?sort=-preco - Ordenar por preço (DESC)",
+      "method": "GET",
+      "url": "{{ base_produtos }}",
+      "headers": [],
+      "parameters": [{ "name": "sort", "value": "-preco" }]
+    },
+    {
+      "_id": "cat_p09",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "9. GET /categorias - Listar todas as categorias",
+      "method": "GET",
+      "url": "{{ base_produtos }}/categorias",
+      "headers": [],
+      "parameters": []
+    },
+    {
+      "_id": "cat_p10",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "10. GET /destaque - Produtos em destaque",
+      "method": "GET",
+      "url": "{{ base_produtos }}/destaque",
+      "headers": [],
+      "parameters": [{ "name": "limit", "value": "6" }]
+    },
+    {
+      "_id": "cat_p11",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "11. GET /categoria/Analgésico - Produtos por categoria (rota)",
+      "method": "GET",
+      "url": "{{ base_produtos }}/categoria/Analgésico",
+      "headers": [],
+      "parameters": [
+        { "name": "page", "value": "1" },
+        { "name": "limit", "value": "10" }
+      ]
+    },
+    {
+      "_id": "cat_p12",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "12. GET /categoria/Antibiótico - Produtos por categoria Antibiótico",
+      "method": "GET",
+      "url": "{{ base_produtos }}/categoria/Antibiótico",
+      "headers": [],
+      "parameters": []
+    },
+    {
+      "_id": "cat_p13",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "13. GET /:id - Produto por ID",
+      "method": "GET",
+      "url": "{{ base_produtos }}/{{ productId }}",
+      "headers": [],
+      "parameters": []
+    },
+    {
+      "_id": "cat_p14",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "14. POST / - Criar produto (admin)",
+      "method": "POST",
+      "url": "{{ base_produtos }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ adminToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Vitamina C 1000mg\",\n  \"principio_ativo\": \"Ácido Ascórbico\",\n  \"categoria\": \"Vitamina\",\n  \"dosagem\": \"1000mg\",\n  \"fabricante\": \"Vitamed\",\n  \"descricao\": \"Suplemento vitamínico para imunidade.\",\n  \"preco\": 29.9,\n  \"estoque\": 50,\n  \"receita_obrigatoria\": false,\n  \"controlado\": false,\n  \"id_farmacia\": \"{{ pharmacyId }}\",\n  \"ativo\": true\n}"
+      },
+      "parameters": []
+    },
+    {
+      "_id": "cat_p15",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "15. PATCH /:id - Atualizar produto (admin)",
+      "method": "PATCH",
+      "url": "{{ base_produtos }}/{{ productId }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ adminToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"preco\": 8.5,\n  \"estoque\": 120,\n  \"descricao\": \"Descrição atualizada pelo admin.\"\n}"
+      },
+      "parameters": []
+    },
+    {
+      "_id": "cat_p16",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "16. Erro - GET /:id com ID inválido",
+      "method": "GET",
+      "url": "{{ base_produtos }}/id-invalido",
+      "headers": [],
+      "parameters": [],
+      "description": "Esperado: 400 - ID de produto inválido"
+    },
+    {
+      "_id": "cat_p17",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "17. Erro - GET /:id com ID inexistente",
+      "method": "GET",
+      "url": "{{ base_produtos }}/{{ missingId }}",
+      "headers": [],
+      "parameters": [],
+      "description": "Esperado: 404 - Produto não encontrado"
+    },
+    {
+      "_id": "cat_p18",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "18. Erro - POST / sem token (não autenticado)",
+      "method": "POST",
+      "url": "{{ base_produtos }}",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Produto sem auth\"\n}"
+      },
+      "parameters": [],
+      "description": "Esperado: 401 - Não autorizado"
+    },
+    {
+      "_id": "cat_p19",
+      "parentId": "fld_produtos",
+      "_type": "request",
+      "name": "19. Erro - PATCH /:id com ID inválido",
+      "method": "PATCH",
+      "url": "{{ base_produtos }}/id-invalido",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ adminToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"preco\": 10\n}"
+      },
+      "parameters": [],
+      "description": "Esperado: 400 - ID de produto inválido"
     }
   ]
 }

@@ -13,6 +13,12 @@ module.exports = (err, req, res, next) => {
     statusCode = 400;
     message = "Email ou CPF já cadastrado";
   }
+  if (err.name === "MulterError") {
+    statusCode = 400;
+    if (err.code === "LIMIT_FILE_SIZE") {
+      message = "A imagem deve ter no máximo 5MB";
+    }
+  }
   if (err.name === "JsonWebTokenError") {
     statusCode = 401;
     message = "Token inválido";

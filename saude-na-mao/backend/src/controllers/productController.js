@@ -1,0 +1,126 @@
+const productService = require("../services/productService");
+
+async function searchProducts(req, res, next) {
+  try {
+    const {
+      q,
+      termo,
+      categoria,
+      id_farmacia,
+      preco_min,
+      preco_max,
+      disponivel,
+      controlado,
+      ordenar,
+      sort,
+      page,
+      limit,
+    } = req.query;
+
+    // Aceita tanto ?ordenar=preco_desc quanto ?sort=-preco (estilo MongoDB)
+    let ordenacaoFinal = ordenar;
+    if (!ordenacaoFinal && sort) {
+      const sortMap = {
+        preco: "preco_asc",
+        "-preco": "preco_desc",
+        nome: "nome",
+        "-nome": "nome_desc",
+      };
+      ordenacaoFinal = sortMap[sort] || sort;
+    }
+
+    const resultado = await productService.searchProducts({
+      termo: termo || q,
+      categoria,
+      id_farmacia,
+      preco_min,
+      preco_max,
+      disponivel,
+      controlado,
+      ordenar: ordenacaoFinal,
+      page,
+      limit,
+    });
+    res.json({ success: true, data: resultado });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getProductById(req, res, next) {
+  try {
+    const produto = await productService.getProductById(req.params.id);
+    res.json({ success: true, data: { produto } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getCategories(req, res, next) {
+  try {
+    const categorias = await productService.getCategories();
+    res.json({ success: true, data: { categorias } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getProductsByCategory(req, res, next) {
+  try {
+    const { categoria } = req.params;
+    const { page, limit } = req.query;
+    const resultado = await productService.getProductsByCategory(categoria, {
+      page,
+      limit,
+    });
+    res.json({ success: true, data: resultado });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function createProduct(req, res, next) {
+  try {
+    const produto = await productService.createProduct(req.body);
+    res.status(201).json({
+      success: true,
+      message: "Produto cadastrado com sucesso",
+      data: { produto },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function updateProduct(req, res, next) {
+  try {
+    const produto = await productService.updateProduct(req.params.id, req.body);
+    res.json({
+      success: true,
+      message: "Produto atualizado com sucesso",
+      data: { produto },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getFeaturedProducts(req, res, next) {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const produtos = await productService.getFeaturedProducts(limit);
+    res.json({ success: true, data: { produtos } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = {
+  searchProducts,
+  getProductById,
+  getCategories,
+  getProductsByCategory,
+  createProduct,
+  updateProduct,
+  getFeaturedProducts,
+};

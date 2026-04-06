@@ -6,6 +6,9 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
+const pharmacyRoutes = require("./routes/pharmacyRoutes");
+const productRoutes = require("./routes/productRoutes");
 const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
@@ -26,8 +29,22 @@ app.use(express.json({ limit: "10mb" }));
 // Cookie parser
 app.use(cookieParser());
 
+// Servir arquivos estáticos da pasta uploads
+app.use("/uploads", express.static("uploads"));
+
 // Rotas de autenticação
 app.use("/api/v1/auth", authRoutes);
+
+// Rotas de usuário
+app.use("/api/v1/users", userRoutes);
+
+// Rotas de farmácias
+app.use("/api/v1/farmacias", pharmacyRoutes);
+app.use("/api/v1/pharmacies", pharmacyRoutes);
+
+// Rotas de produtos
+app.use("/api/v1/produtos", productRoutes);
+app.use("/api/v1/products", productRoutes);
 
 // 404 handler
 app.use((req, res, next) => {
