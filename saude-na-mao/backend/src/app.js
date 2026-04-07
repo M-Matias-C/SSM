@@ -9,6 +9,7 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const pharmacyRoutes = require("./routes/pharmacyRoutes");
 const productRoutes = require("./routes/productRoutes");
+const geoRoutes = require("./routes/geoRoutes");
 const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
@@ -45,6 +46,9 @@ app.use("/api/v1/pharmacies", pharmacyRoutes);
 // Rotas de produtos
 app.use("/api/v1/produtos", productRoutes);
 app.use("/api/v1/products", productRoutes);
+
+// Rotas de geolocalização
+app.use("/api/v1/geo", geoRoutes);
 
 // 404 handler
 app.use((req, res, next) => {

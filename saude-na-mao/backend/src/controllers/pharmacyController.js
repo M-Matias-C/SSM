@@ -2,12 +2,13 @@ const pharmacyService = require("../services/pharmacyService");
 
 async function listPharmacies(req, res, next) {
   try {
-    const { page, limit, cidade, estado } = req.query;
+    const { page, limit, cidade, estado, search } = req.query;
     const resultado = await pharmacyService.listPharmacies({
       page,
       limit,
       cidade,
       estado,
+      search,
     });
     res.json({ success: true, data: resultado });
   } catch (error) {

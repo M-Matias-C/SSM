@@ -13,11 +13,13 @@ async function listPharmacies({
   limit = 10,
   cidade,
   estado,
+  search,
   ativa = true,
 } = {}) {
   const filtro = { ativa };
   if (cidade) filtro.cidade = { $regex: cidade, $options: "i" };
   if (estado) filtro.estado = estado.toUpperCase();
+  if (search) filtro.nome = { $regex: search, $options: "i" };
 
   const resultado = await Pharmacy.paginate(filtro, {
     page,

@@ -868,6 +868,125 @@
       },
       "parameters": [],
       "description": "Esperado: 400 - ID de produto inválido"
+    },
+    {
+      "_id": "wrk_geo",
+      "_type": "workspace",
+      "name": "Saúde na Mão - Geolocalização",
+      "description": "Testes dos endpoints de geolocalização e proximidade"
+    },
+    {
+      "_id": "env_geo",
+      "parentId": "wrk_geo",
+      "_type": "environment",
+      "name": "Variables",
+      "data": {
+        "base_geo": "http://localhost:3000/api/v1/geo",
+        "cep": "74030010",
+        "endereco": "Avenida Anhanguera, Goiânia, GO, Brasil",
+        "latitude": "-16.6869",
+        "longitude": "-49.2647",
+        "destino_latitude": "-16.7081",
+        "destino_longitude": "-49.252",
+        "raioKm": "5",
+        "limit": "10"
+      }
+    },
+    {
+      "_id": "fld_geo",
+      "parentId": "wrk_geo",
+      "_type": "request_group",
+      "name": "Geo"
+    },
+    {
+      "_id": "geo_01",
+      "parentId": "fld_geo",
+      "_type": "request",
+      "name": "1. GET /cep/:cep - Buscar CEP de Goiânia com coordenadas",
+      "method": "GET",
+      "url": "{{ base_geo }}/cep/{{ cep }}",
+      "headers": [],
+      "parameters": []
+    },
+    {
+      "_id": "geo_02",
+      "parentId": "fld_geo",
+      "_type": "request",
+      "name": "2. GET /geocode?q=... - Geocodificar endereço em Goiânia",
+      "method": "GET",
+      "url": "{{ base_geo }}/geocode",
+      "headers": [],
+      "parameters": [{ "name": "q", "value": "{{ endereco }}" }]
+    },
+    {
+      "_id": "geo_03",
+      "parentId": "fld_geo",
+      "_type": "request",
+      "name": "3. GET /pharmacies/nearby - Buscar por coordenadas em Goiânia",
+      "method": "GET",
+      "url": "{{ base_geo }}/pharmacies/nearby",
+      "headers": [],
+      "parameters": [
+        { "name": "latitude", "value": "{{ latitude }}" },
+        { "name": "longitude", "value": "{{ longitude }}" },
+        { "name": "raioKm", "value": "{{ raioKm }}" },
+        { "name": "limit", "value": "{{ limit }}" }
+      ]
+    },
+    {
+      "_id": "geo_04",
+      "parentId": "fld_geo",
+      "_type": "request",
+      "name": "4. GET /pharmacies/nearby - Buscar por CEP de Goiânia",
+      "method": "GET",
+      "url": "{{ base_geo }}/pharmacies/nearby",
+      "headers": [],
+      "parameters": [
+        { "name": "cep", "value": "{{ cep }}" },
+        { "name": "raioKm", "value": "{{ raioKm }}" },
+        { "name": "limit", "value": "{{ limit }}" }
+      ]
+    },
+    {
+      "_id": "geo_05",
+      "parentId": "fld_geo",
+      "_type": "request",
+      "name": "5. POST /distance-matrix - Matriz de distâncias",
+      "method": "POST",
+      "url": "{{ base_geo }}/distance-matrix",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"origem\": {\n    \"latitude\": {{ latitude }},\n    \"longitude\": {{ longitude }}\n  },\n  \"destinos\": [\n    {\n      \"latitude\": {{ destino_latitude }},\n      \"longitude\": {{ destino_longitude }}\n    },\n    {\n      \"latitude\": -16.72,\n      \"longitude\": -49.238\n    }\n  ]\n}"
+      },
+      "parameters": []
+    },
+    {
+      "_id": "geo_06",
+      "parentId": "fld_geo",
+      "_type": "request",
+      "name": "6. GET /directions - Obter rota",
+      "method": "GET",
+      "url": "{{ base_geo }}/directions",
+      "headers": [],
+      "parameters": [
+        { "name": "origem_lat", "value": "{{ latitude }}" },
+        { "name": "origem_lng", "value": "{{ longitude }}" },
+        { "name": "destino_lat", "value": "{{ destino_latitude }}" },
+        { "name": "destino_lng", "value": "{{ destino_longitude }}" },
+        { "name": "modo", "value": "driving" }
+      ]
+    },
+    {
+      "_id": "geo_07",
+      "parentId": "fld_geo",
+      "_type": "request",
+      "name": "7. Erro - GET /geocode sem q",
+      "method": "GET",
+      "url": "{{ base_geo }}/geocode",
+      "headers": [],
+      "parameters": [],
+      "description": "Esperado: 400 - Parâmetro q (endereço) é obrigatório"
     }
   ]
 }

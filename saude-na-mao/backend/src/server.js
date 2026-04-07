@@ -1,6 +1,9 @@
 require("dotenv").config();
 
+const http = require("http");
 const connectDB = require("./config/database");
+const { initSocket } = require("./config/socket");
+const { setupStockSocket } = require("./sockets/stockSocket");
 const app = require("./app");
 
 const startServer = async () => {
@@ -8,9 +11,14 @@ const startServer = async () => {
     await connectDB();
 
     const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-      console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
-      console.log(`📡 API disponível em http://localhost:${PORT}/api/v1/auth`);
+    const server = http.createServer(app);
+    const io = initSocket(server);
+
+    setupStockSocket(io);
+
+    server.listen(PORT, () => {
+      console.log(`Servidor rodando em http://localhost:${PORT}`);
+      console.log("Socket.io ativo");
     });
   } catch (error) {
     console.error("❌ Erro ao iniciar o servidor:", error);
