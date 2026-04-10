@@ -1,0 +1,166 @@
+const mongoose = require("mongoose");
+
+const STATUS_OPTIONS = [
+  "Pendente",
+  "Em Análise",
+  "Aprovada",
+  "Rejeitada",
+  "Expirada",
+  "Cancelada",
+];
+
+const historicoStatusSchema = new mongoose.Schema(
+  {
+    status: {
+      type: String,
+      enum: STATUS_OPTIONS,
+      required: true,
+    },
+    alterado_em: {
+      type: Date,
+      default: Date.now,
+    },
+    alterado_por: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    observacao: {
+      type: String,
+      trim: true,
+    },
+  },
+  { _id: false },
+);
+
+const prescriptionSchema = new mongoose.Schema(
+  {
+    id_usuario: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+    url_arquivo: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    nome_arquivo: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    tipo_arquivo: {
+      type: String,
+      enum: ["image/jpeg", "image/png", "application/pdf"],
+      required: true,
+    },
+    tamanho_arquivo: {
+      type: Number,
+      min: 0,
+    },
+    status: {
+      type: String,
+      enum: STATUS_OPTIONS,
+      default: "Pendente",
+      index: true,
+    },
+    dados_ocr: {
+      nome_medico: {
+        type: String,
+        trim: true,
+      },
+      crm: {
+        type: String,
+        trim: true,
+      },
+      uf_crm: {
+        type: String,
+        trim: true,
+      },
+      data_emissao: {
+        type: Date,
+      },
+      principio_ativo: {
+        type: String,
+        trim: true,
+      },
+      raw_text: {
+        type: String,
+      },
+    },
+    validacao_crm: {
+      crm_valido: {
+        type: Boolean,
+        default: false,
+      },
+      medico_encontrado: {
+        type: String,
+        trim: true,
+      },
+      especialidade: {
+        type: String,
+        trim: true,
+      },
+      verificado_em: {
+        type: Date,
+      },
+    },
+    validade: {
+      type: Date,
+      validate: {
+        validator(value) {
+          if (!value) {
+            return true;
+          }
+
+          const dataEmissao = this.dados_ocr?.data_emissao;
+          if (!dataEmissao) {
+            return true;
+          }
+
+          const limite = new Date(dataEmissao);
+          limite.setMonth(limite.getMonth() + 6);
+          return value <= limite;
+        },
+        message:
+          "A validade da receita não pode exceder 6 meses da data de emissão.",
+      },
+    },
+    observacoes: {
+      type: String,
+      trim: true,
+    },
+    validado_por: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    validado_em: {
+      type: Date,
+    },
+    historico_status: {
+      type: [historicoStatusSchema],
+      default: [],
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
+
+prescriptionSchema.methods.adicionarHistorico = function (
+  novoStatus,
+  usuarioId,
+  obs,
+) {
+  this.historico_status.push({
+    status: novoStatus,
+    alterado_por: usuarioId,
+    observacao: obs,
+  });
+  this.status = novoStatus;
+};
+
+module.exports =
+  mongoose.models.Prescription ||
+  mongoose.model("Prescription", prescriptionSchema);

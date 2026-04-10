@@ -987,6 +987,356 @@
       "headers": [],
       "parameters": [],
       "description": "Esperado: 400 - Parâmetro q (endereço) é obrigatório"
+    },
+    {
+      "_id": "wrk_receitas",
+      "_type": "workspace",
+      "name": "Saúde na Mão - Receitas Médicas",
+      "description": "Testes do Módulo 5 - upload, OCR, validação farmacêutica e cenários de erro"
+    },
+    {
+      "_id": "env_receitas",
+      "parentId": "wrk_receitas",
+      "_type": "environment",
+      "name": "Variables",
+      "data": {
+        "base_auth": "http://localhost:3000/api/v1/auth",
+        "base_prescriptions": "http://localhost:3000/api/v1/prescriptions",
+        "commonUserToken": "SUBSTITUA_PELO_TOKEN_DO_USUARIO_COMUM",
+        "farmaciaToken": "SUBSTITUA_PELO_TOKEN_DA_FARMACIA",
+        "prescriptionId": "SUBSTITUA_PELO_ID_DA_RECEITA",
+        "pendingPrescriptionId": "SUBSTITUA_PELO_ID_DA_RECEITA_PENDENTE",
+        "cancelPrescriptionId": "SUBSTITUA_PELO_ID_DA_RECEITA_CANCELAVEL",
+        "usuarioEmail": "usuario.receitas@example.com",
+        "usuarioSenha": "123456",
+        "farmaciaEmail": "farmacia.receitas@example.com",
+        "farmaciaSenha": "123456",
+        "receitaJpgPath": "C:/caminho/para/receita.jpg",
+        "receitaPngPath": "C:/caminho/para/receita.png",
+        "receitaPdfPath": "C:/caminho/para/receita.pdf",
+        "arquivoInvalidoPath": "C:/caminho/para/arquivo.doc",
+        "arquivoGrandePath": "C:/caminho/para/arquivo-maior-15mb.pdf"
+      }
+    },
+    {
+      "_id": "fld_receitas_setup",
+      "parentId": "wrk_receitas",
+      "_type": "request_group",
+      "name": "Setup e Auth"
+    },
+    {
+      "_id": "fld_receitas_usuario",
+      "parentId": "wrk_receitas",
+      "_type": "request_group",
+      "name": "Fluxo do Usuário"
+    },
+    {
+      "_id": "fld_receitas_farmacia",
+      "parentId": "wrk_receitas",
+      "_type": "request_group",
+      "name": "Fluxo da Farmácia"
+    },
+    {
+      "_id": "fld_receitas_erros",
+      "parentId": "wrk_receitas",
+      "_type": "request_group",
+      "name": "Erros e Restrições"
+    },
+    {
+      "_id": "rec_setup_01",
+      "parentId": "fld_receitas_setup",
+      "_type": "request",
+      "name": "1. POST /register - Cadastrar usuário comum para receitas",
+      "method": "POST",
+      "url": "{{ base_auth }}/register",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Usuario Receitas\",\n  \"email\": \"{{ usuarioEmail }}\",\n  \"telefone\": \"62999990001\",\n  \"cpf\": \"12345678901\",\n  \"senha\": \"{{ usuarioSenha }}\",\n  \"tipo_usuario\": \"cliente\"\n}"
+      },
+      "description": "Use se ainda não existir um usuário comum para testar uploads."
+    },
+    {
+      "_id": "rec_setup_02",
+      "parentId": "fld_receitas_setup",
+      "_type": "request",
+      "name": "2. POST /login - Login usuário comum",
+      "method": "POST",
+      "url": "{{ base_auth }}/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{ usuarioEmail }}\",\n  \"senha\": \"{{ usuarioSenha }}\"\n}"
+      },
+      "description": "Copie data.accessToken para a variável commonUserToken."
+    },
+    {
+      "_id": "rec_setup_03",
+      "parentId": "fld_receitas_setup",
+      "_type": "request",
+      "name": "3. POST /register - Cadastrar usuário farmácia",
+      "method": "POST",
+      "url": "{{ base_auth }}/register",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Farmacia Receitas\",\n  \"email\": \"{{ farmaciaEmail }}\",\n  \"telefone\": \"62999990002\",\n  \"cpf\": \"10987654321\",\n  \"senha\": \"{{ farmaciaSenha }}\",\n  \"tipo_usuario\": \"farmacia\"\n}"
+      },
+      "description": "Cria o usuário com perfil farmácia para validação das receitas."
+    },
+    {
+      "_id": "rec_setup_04",
+      "parentId": "fld_receitas_setup",
+      "_type": "request",
+      "name": "4. POST /login - Login usuário farmácia",
+      "method": "POST",
+      "url": "{{ base_auth }}/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{ farmaciaEmail }}\",\n  \"senha\": \"{{ farmaciaSenha }}\"\n}"
+      },
+      "description": "Copie data.accessToken para a variável farmaciaToken."
+    },
+    {
+      "_id": "rec_user_01",
+      "parentId": "fld_receitas_usuario",
+      "_type": "request",
+      "name": "1. PATCH /fcm-token - Atualizar token FCM do usuário",
+      "method": "PATCH",
+      "url": "{{ base_prescriptions }}/fcm-token",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ commonUserToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"fcmToken\": \"token-fcm-teste-123\"\n}"
+      }
+    },
+    {
+      "_id": "rec_user_02",
+      "parentId": "fld_receitas_usuario",
+      "_type": "request",
+      "name": "2. POST /upload - Upload de receita JPG",
+      "method": "POST",
+      "url": "{{ base_prescriptions }}/upload",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ commonUserToken }}" }
+      ],
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "receita",
+            "type": "file",
+            "fileName": "{{ receitaJpgPath }}"
+          }
+        ]
+      },
+      "description": "Após sucesso, copie data.receita._id para prescriptionId. Aguarde 5 a 15 segundos antes de consultar o OCR."
+    },
+    {
+      "_id": "rec_user_03",
+      "parentId": "fld_receitas_usuario",
+      "_type": "request",
+      "name": "3. POST /upload - Upload de receita PNG",
+      "method": "POST",
+      "url": "{{ base_prescriptions }}/upload",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ commonUserToken }}" }
+      ],
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "receita",
+            "type": "file",
+            "fileName": "{{ receitaPngPath }}"
+          }
+        ]
+      }
+    },
+    {
+      "_id": "rec_user_04",
+      "parentId": "fld_receitas_usuario",
+      "_type": "request",
+      "name": "4. POST /upload - Upload de receita PDF",
+      "method": "POST",
+      "url": "{{ base_prescriptions }}/upload",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ commonUserToken }}" }
+      ],
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "receita",
+            "type": "file",
+            "fileName": "{{ receitaPdfPath }}"
+          }
+        ]
+      }
+    },
+    {
+      "_id": "rec_user_05",
+      "parentId": "fld_receitas_usuario",
+      "_type": "request",
+      "name": "5. GET /:id - Consultar receita após OCR",
+      "method": "GET",
+      "url": "{{ base_prescriptions }}/{{ prescriptionId }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ commonUserToken }}" }
+      ],
+      "description": "Valide se o status saiu de Pendente para Em Análise e se dados_ocr/validacao_crm foram preenchidos."
+    },
+    {
+      "_id": "rec_user_06",
+      "parentId": "fld_receitas_usuario",
+      "_type": "request",
+      "name": "6. GET / - Listar receitas do usuário",
+      "method": "GET",
+      "url": "{{ base_prescriptions }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ commonUserToken }}" }
+      ],
+      "parameters": [
+        { "name": "page", "value": "1" },
+        { "name": "limit", "value": "10" }
+      ]
+    },
+    {
+      "_id": "rec_user_07",
+      "parentId": "fld_receitas_usuario",
+      "_type": "request",
+      "name": "7. GET /?status=Em Análise - Filtrar receitas em análise",
+      "method": "GET",
+      "url": "{{ base_prescriptions }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ commonUserToken }}" }
+      ],
+      "parameters": [
+        { "name": "status", "value": "Em Análise" },
+        { "name": "page", "value": "1" },
+        { "name": "limit", "value": "10" }
+      ]
+    },
+    {
+      "_id": "rec_user_08",
+      "parentId": "fld_receitas_usuario",
+      "_type": "request",
+      "name": "8. DELETE /:id/cancel - Cancelar receita",
+      "method": "DELETE",
+      "url": "{{ base_prescriptions }}/{{ cancelPrescriptionId }}/cancel",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ commonUserToken }}" }
+      ],
+      "description": "Use uma receita ainda não aprovada. Copie o id para cancelPrescriptionId antes de executar."
+    },
+    {
+      "_id": "rec_farm_01",
+      "parentId": "fld_receitas_farmacia",
+      "_type": "request",
+      "name": "1. GET /admin/pending - Listar receitas pendentes",
+      "method": "GET",
+      "url": "{{ base_prescriptions }}/admin/pending",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ farmaciaToken }}" }
+      ],
+      "parameters": [
+        { "name": "page", "value": "1" },
+        { "name": "limit", "value": "20" }
+      ],
+      "description": "Copie uma receita pendente para pendingPrescriptionId antes de validar."
+    },
+    {
+      "_id": "rec_farm_02",
+      "parentId": "fld_receitas_farmacia",
+      "_type": "request",
+      "name": "2. PATCH /admin/:id/validate - Aprovar receita",
+      "method": "PATCH",
+      "url": "{{ base_prescriptions }}/admin/{{ pendingPrescriptionId }}/validate",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ farmaciaToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"aprovado\": true,\n  \"observacoes\": \"Receita conferida e aprovada pelo farmacêutico.\",\n  \"validade\": \"2026-12-31T23:59:59.000Z\"\n}"
+      }
+    },
+    {
+      "_id": "rec_farm_03",
+      "parentId": "fld_receitas_farmacia",
+      "_type": "request",
+      "name": "3. PATCH /admin/:id/validate - Rejeitar receita",
+      "method": "PATCH",
+      "url": "{{ base_prescriptions }}/admin/{{ pendingPrescriptionId }}/validate",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ farmaciaToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"aprovado\": false,\n  \"observacoes\": \"CRM não conferido ou documento ilegível.\"\n}"
+      },
+      "description": "Use outra receita pendente, porque uma receita aprovada/rejeitada não pode ser validada novamente."
+    },
+    {
+      "_id": "rec_err_01",
+      "parentId": "fld_receitas_erros",
+      "_type": "request",
+      "name": "1. Erro - POST /upload com arquivo DOC",
+      "method": "POST",
+      "url": "{{ base_prescriptions }}/upload",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ commonUserToken }}" }
+      ],
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "receita",
+            "type": "file",
+            "fileName": "{{ arquivoInvalidoPath }}"
+          }
+        ]
+      },
+      "description": "Esperado: 400 - Formato não permitido. Use JPG, PNG ou PDF."
+    },
+    {
+      "_id": "rec_err_02",
+      "parentId": "fld_receitas_erros",
+      "_type": "request",
+      "name": "2. Erro - POST /upload com arquivo maior que 15MB",
+      "method": "POST",
+      "url": "{{ base_prescriptions }}/upload",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ commonUserToken }}" }
+      ],
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "receita",
+            "type": "file",
+            "fileName": "{{ arquivoGrandePath }}"
+          }
+        ]
+      },
+      "description": "Esperado: 400 - erro de limite do multer para arquivos acima de 15MB."
+    },
+    {
+      "_id": "rec_err_03",
+      "parentId": "fld_receitas_erros",
+      "_type": "request",
+      "name": "3. Erro - GET /admin/pending com usuário comum",
+      "method": "GET",
+      "url": "{{ base_prescriptions }}/admin/pending",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ commonUserToken }}" }
+      ],
+      "description": "Esperado: 403 - acesso permitido apenas para farmacia/administrador."
     }
   ]
 }

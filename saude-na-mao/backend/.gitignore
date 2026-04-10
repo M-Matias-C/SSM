@@ -3,3 +3,4 @@ node_modules/
 uploads/perfil/*.jpg
 uploads/perfil/*.png
 uploads/perfil/*.webp
+src/config/firebase-service-account.json

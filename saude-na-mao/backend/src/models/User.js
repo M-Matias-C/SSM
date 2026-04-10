@@ -51,6 +51,11 @@ const UserSchema = new mongoose.Schema({
     type: String,
     select: false,
   },
+  fcmToken: {
+    type: String,
+    default: null,
+    select: false,
+  },
   resetPasswordToken: {
     type: String,
     select: false,
