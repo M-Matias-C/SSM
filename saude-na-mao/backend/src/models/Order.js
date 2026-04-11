@@ -106,6 +106,47 @@ const historicoStatusSchema = new mongoose.Schema(
   },
 );
 
+const localizacaoAtualSchema = new mongoose.Schema(
+  {
+    latitude: {
+      type: Number,
+    },
+    longitude: {
+      type: Number,
+    },
+    atualizado_em: {
+      type: Date,
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
+const entregadorSchema = new mongoose.Schema(
+  {
+    nome: {
+      type: String,
+      trim: true,
+    },
+    telefone: {
+      type: String,
+      trim: true,
+    },
+    veiculo: {
+      type: String,
+      trim: true,
+    },
+    localizacao_atual: {
+      type: localizacaoAtualSchema,
+      default: () => ({}),
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
 const orderSchema = new mongoose.Schema(
   {
     id_usuario: {
@@ -163,6 +204,26 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       min: 0,
     },
+    entregador: {
+      type: entregadorSchema,
+      default: () => ({}),
+    },
+    codigo_retirada: {
+      type: String,
+      trim: true,
+    },
+    avaliacao_entrega: {
+      type: Number,
+      min: 1,
+      max: 5,
+    },
+    comentario_avaliacao: {
+      type: String,
+      trim: true,
+    },
+    avaliado_em: {
+      type: Date,
+    },
     cancelado_em: {
       type: Date,
     },
@@ -172,6 +233,10 @@ const orderSchema = new mongoose.Schema(
     },
     historico_status: {
       type: [historicoStatusSchema],
+      default: [],
+    },
+    notificacoes_enviadas: {
+      type: [String],
       default: [],
     },
   },

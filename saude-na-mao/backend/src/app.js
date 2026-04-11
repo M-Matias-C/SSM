@@ -13,6 +13,9 @@ const geoRoutes = require("./routes/geoRoutes");
 const prescriptionRoutes = require("./routes/prescriptionRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+const faqRoutes = require("./routes/faqRoutes");
+const supportRoutes = require("./routes/supportRoutes");
 const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
@@ -68,6 +71,15 @@ app.use("/api/v1/cart", cartRoutes);
 
 // Rotas de pagamento
 app.use("/api/v1/payments", paymentRoutes);
+
+// Rotas de pedidos
+app.use("/api/v1/orders", orderRoutes);
+
+// Rotas de FAQ
+app.use("/api/v1/faq", faqRoutes);
+
+// Rotas de suporte
+app.use("/api/v1/support", supportRoutes);
 
 // 404 handler
 app.use((req, res, next) => {

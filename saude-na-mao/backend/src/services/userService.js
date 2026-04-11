@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const User = require("../models/User");
 const Address = require("../models/Adress");
+const Order = require("../models/Order");
 const { buscarCep } = require("../utils/viaCep");
 
 function createError(message, statusCode) {
@@ -129,11 +130,16 @@ async function setDefaultAddress(userId, addressId) {
 }
 
 async function getOrderHistory(userId, { page = 1, limit = 10 }) {
-  // Since Order model does not exist yet, return empty data
-  const pedidos = [];
-  const total = 0;
-  const totalPaginas = 0;
-  return { pedidos, total, pagina: page, totalPaginas };
+  const pagina = Number(page);
+  const limite = Number(limit);
+  const total = await Order.countDocuments({ id_usuario: userId });
+  const pedidos = await Order.find({ id_usuario: userId })
+    .sort({ createdAt: -1 })
+    .skip((pagina - 1) * limite)
+    .limit(limite)
+    .populate("id_farmacia", "nome cidade estado");
+  const totalPaginas = Math.ceil(total / limite);
+  return { pedidos, total, pagina, totalPaginas };
 }
 
 module.exports = {
