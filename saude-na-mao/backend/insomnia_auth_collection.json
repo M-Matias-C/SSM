@@ -1337,6 +1337,267 @@
         { "name": "Authorization", "value": "Bearer {{ commonUserToken }}" }
       ],
       "description": "Esperado: 403 - acesso permitido apenas para farmacia/administrador."
+    },
+    {
+      "_id": "wrk_cart",
+      "_type": "workspace",
+      "name": "Saúde na Mão - Carrinho e Checkout",
+      "description": "Testes do Módulo 6 - carrinho, frete e checkout"
+    },
+    {
+      "_id": "env_cart",
+      "parentId": "wrk_cart",
+      "_type": "environment",
+      "name": "Variables",
+      "data": {
+        "base_cart": "http://localhost:3000/api/v1/cart",
+        "accessToken": "SUBSTITUA_PELO_TOKEN_DO_USUARIO",
+        "nonControlledProductId": "SUBSTITUA_PELO_ID_DO_PRODUTO_NAO_CONTROLADO",
+        "controlledProductId": "SUBSTITUA_PELO_ID_DO_PRODUTO_CONTROLADO",
+        "otherPharmacyProductId": "SUBSTITUA_PELO_ID_DO_PRODUTO_DE_OUTRA_FARMACIA",
+        "addressId": "SUBSTITUA_PELO_ID_DO_ENDERECO",
+        "approvedPrescriptionId": "SUBSTITUA_PELO_ID_DA_RECEITA_APROVADA",
+        "pendingPrescriptionId": "SUBSTITUA_PELO_ID_DA_RECEITA_PENDENTE",
+        "rejectedPrescriptionId": "SUBSTITUA_PELO_ID_DA_RECEITA_REJEITADA",
+        "invalidAddressId": "507f1f77bcf86cd799439011"
+      }
+    },
+    {
+      "_id": "fld_cart_fluxo",
+      "parentId": "wrk_cart",
+      "_type": "request_group",
+      "name": "Fluxo Principal"
+    },
+    {
+      "_id": "fld_cart_erros",
+      "parentId": "wrk_cart",
+      "_type": "request_group",
+      "name": "Erros e Regras"
+    },
+    {
+      "_id": "cart_01",
+      "parentId": "fld_cart_fluxo",
+      "_type": "request",
+      "name": "1. GET / - Ver carrinho vazio",
+      "method": "GET",
+      "url": "{{ base_cart }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ],
+      "description": "Esperado: carrinho criado automaticamente com itens vazios."
+    },
+    {
+      "_id": "cart_02",
+      "parentId": "fld_cart_fluxo",
+      "_type": "request",
+      "name": "2. POST /items - Adicionar medicamento sem receita",
+      "method": "POST",
+      "url": "{{ base_cart }}/items",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"productId\": \"{{ nonControlledProductId }}\",\n  \"quantidade\": 2\n}"
+      },
+      "description": "Esperado: item adicionado, subtotal calculado."
+    },
+    {
+      "_id": "cart_03",
+      "parentId": "fld_cart_fluxo",
+      "_type": "request",
+      "name": "3. GET /delivery/options - Ver opções de entrega",
+      "method": "GET",
+      "url": "{{ base_cart }}/delivery/options",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ],
+      "description": "Esperado: array com moto, retirada, drive-thru e drone."
+    },
+    {
+      "_id": "cart_04",
+      "parentId": "fld_cart_fluxo",
+      "_type": "request",
+      "name": "4. POST /delivery - Definir entrega por moto",
+      "method": "POST",
+      "url": "{{ base_cart }}/delivery",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"tipoEntrega\": \"moto\",\n  \"enderecoId\": \"{{ addressId }}\"\n}"
+      },
+      "description": "Esperado: taxa_entrega calculada e total atualizado."
+    },
+    {
+      "_id": "cart_05",
+      "parentId": "fld_cart_fluxo",
+      "_type": "request",
+      "name": "5. PATCH /items/:productId - Testar frete grátis",
+      "method": "PATCH",
+      "url": "{{ base_cart }}/items/{{ nonControlledProductId }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"quantidade\": 10\n}"
+      },
+      "description": "Se subtotal >= 150, taxa_entrega deve ser 0."
+    },
+    {
+      "_id": "cart_06",
+      "parentId": "fld_cart_fluxo",
+      "_type": "request",
+      "name": "6. POST /items - Adicionar controlado com receita aprovada",
+      "method": "POST",
+      "url": "{{ base_cart }}/items",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"productId\": \"{{ controlledProductId }}\",\n  \"quantidade\": 1,\n  \"receitaId\": \"{{ approvedPrescriptionId }}\"\n}"
+      },
+      "description": "Use após limpar o carrinho, se necessário. Esperado: item adicionado com id_receita preenchido."
+    },
+    {
+      "_id": "cart_07",
+      "parentId": "fld_cart_fluxo",
+      "_type": "request",
+      "name": "7. POST /checkout - Finalizar pedido",
+      "method": "POST",
+      "url": "{{ base_cart }}/checkout",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ],
+      "description": "Esperado: 201 com pedido criado e status aguardando_pagamento."
+    },
+    {
+      "_id": "cart_08",
+      "parentId": "fld_cart_fluxo",
+      "_type": "request",
+      "name": "8. GET / - Verificar que carrinho foi desativado",
+      "method": "GET",
+      "url": "{{ base_cart }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ],
+      "description": "Esperado: novo carrinho vazio, com o anterior inativo."
+    },
+    {
+      "_id": "cart_09",
+      "parentId": "fld_cart_fluxo",
+      "_type": "request",
+      "name": "9. POST /abandon - Testar abandono de carrinho",
+      "method": "POST",
+      "url": "{{ base_cart }}/abandon",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ],
+      "description": "Adicione um item antes. Esperado: carrinho marcado como inativo."
+    },
+    {
+      "_id": "cart_10",
+      "parentId": "fld_cart_erros",
+      "_type": "request",
+      "name": "10. Erro - POST /items controlado sem receita",
+      "method": "POST",
+      "url": "{{ base_cart }}/items",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"productId\": \"{{ controlledProductId }}\",\n  \"quantidade\": 1\n}"
+      },
+      "description": "Esperado: 400 - Este medicamento requer receita médica."
+    },
+    {
+      "_id": "cart_11",
+      "parentId": "fld_cart_erros",
+      "_type": "request",
+      "name": "11. Erro - POST /items controlado com receita pendente",
+      "method": "POST",
+      "url": "{{ base_cart }}/items",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"productId\": \"{{ controlledProductId }}\",\n  \"quantidade\": 1,\n  \"receitaId\": \"{{ pendingPrescriptionId }}\"\n}"
+      },
+      "description": "Esperado: 400 - A receita precisa estar aprovada."
+    },
+    {
+      "_id": "cart_12",
+      "parentId": "fld_cart_erros",
+      "_type": "request",
+      "name": "12. Erro - POST /items controlado com receita rejeitada",
+      "method": "POST",
+      "url": "{{ base_cart }}/items",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"productId\": \"{{ controlledProductId }}\",\n  \"quantidade\": 1,\n  \"receitaId\": \"{{ rejectedPrescriptionId }}\"\n}"
+      },
+      "description": "Esperado: 400 - A receita precisa estar aprovada."
+    },
+    {
+      "_id": "cart_13",
+      "parentId": "fld_cart_erros",
+      "_type": "request",
+      "name": "13. Erro - POST /items produto de outra farmácia",
+      "method": "POST",
+      "url": "{{ base_cart }}/items",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"productId\": \"{{ otherPharmacyProductId }}\",\n  \"quantidade\": 1\n}"
+      },
+      "description": "Esperado: 400 - Seu carrinho já contém itens de outra farmácia."
+    },
+    {
+      "_id": "cart_14",
+      "parentId": "fld_cart_erros",
+      "_type": "request",
+      "name": "14. Erro - POST /delivery drone fora da cobertura",
+      "method": "POST",
+      "url": "{{ base_cart }}/delivery",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"tipoEntrega\": \"drone\",\n  \"enderecoId\": \"{{ invalidAddressId }}\"\n}"
+      },
+      "description": "Troque por um endereço real fora de Goiânia, São Paulo ou Brasília. Esperado: 400 - Drone não disponível nesta cidade."
+    },
+    {
+      "_id": "cart_15",
+      "parentId": "fld_cart_erros",
+      "_type": "request",
+      "name": "15. Erro - POST /checkout antifraude acima de R$5000",
+      "method": "POST",
+      "url": "{{ base_cart }}/checkout",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ accessToken }}" }
+      ],
+      "description": "Monte antes um carrinho com total acima de R$5.000. Esperado: 400 - Pedido bloqueado para análise de segurança."
     }
   ]
 }

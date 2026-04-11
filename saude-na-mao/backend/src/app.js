@@ -11,6 +11,8 @@ const pharmacyRoutes = require("./routes/pharmacyRoutes");
 const productRoutes = require("./routes/productRoutes");
 const geoRoutes = require("./routes/geoRoutes");
 const prescriptionRoutes = require("./routes/prescriptionRoutes");
+const cartRoutes = require("./routes/cartRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
@@ -26,13 +28,20 @@ app.use(cors(corsOptions));
 app.use(helmet());
 
 // JSON parser
-app.use(express.json({ limit: "10mb" }));
+app.use((req, res, next) => {
+  if (req.path === "/api/v1/payments/webhook/mercadopago") {
+    return next();
+  }
+
+  return express.json({ limit: "10mb" })(req, res, next);
+});
 
 // Cookie parser
 app.use(cookieParser());
 
 // Servir arquivos estáticos da pasta uploads
 app.use("/uploads", express.static("uploads"));
+app.use("/uploads/comprovantes", express.static("uploads/comprovantes"));
 
 // Rotas de autenticação
 app.use("/api/v1/auth", authRoutes);
@@ -53,6 +62,12 @@ app.use("/api/v1/geo", geoRoutes);
 
 // Rotas de receitas médicas
 app.use("/api/v1/prescriptions", prescriptionRoutes);
+
+// Rotas de carrinho
+app.use("/api/v1/cart", cartRoutes);
+
+// Rotas de pagamento
+app.use("/api/v1/payments", paymentRoutes);
 
 // 404 handler
 app.use((req, res, next) => {

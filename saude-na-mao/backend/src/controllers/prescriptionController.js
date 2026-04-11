@@ -1,6 +1,6 @@
 const prescriptionService = require("../services/prescriptionService");
 const notificationService = require("../services/notificationService");
-const User = require("../models/user");
+const User = require("../models/User");
 
 async function uploadPrescription(req, res, next) {
   try {

@@ -1,5 +1,5 @@
 const Prescription = require("../models/Prescription");
-const User = require("../models/user");
+const User = require("../models/User");
 const ocrService = require("./ocrService");
 const notificationService = require("./notificationService");
 const path = require("path");
