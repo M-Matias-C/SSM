@@ -3,6 +3,7 @@ const { body, param, validationResult } = require("express-validator");
 const rateLimit = require("express-rate-limit");
 const authController = require("../controllers/authController");
 const authMiddleware = require("../middlewares/authMiddleware");
+const { audit } = require("../middlewares/auditMiddleware");
 
 const router = express.Router();
 
@@ -67,6 +68,7 @@ router.post(
   ],
   validateRequest,
   authController.register,
+  audit("USER_CREATED", "User"),
 );
 
 // POST /login
@@ -79,13 +81,14 @@ router.post(
   ],
   validateRequest,
   authController.login,
+  audit("LOGIN", "User"),
 );
 
 // POST /refresh-token
 router.post("/refresh-token", authController.refreshToken);
 
 // POST /logout
-router.post("/logout", authController.logout);
+router.post("/logout", authController.logout, audit("LOGOUT", "User"));
 
 // POST /forgot-password
 router.post(

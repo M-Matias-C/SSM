@@ -1,6 +1,7 @@
 const express = require("express");
 const prescriptionController = require("../controllers/prescriptionController");
 const authMiddleware = require("../middlewares/authMiddleware");
+const { audit } = require("../middlewares/auditMiddleware");
 const {
   upload,
   handleMulterError,
@@ -14,6 +15,7 @@ router.post(
   upload,
   handleMulterError,
   prescriptionController.uploadPrescription,
+  audit("PRESCRIPTION_UPLOADED", "Prescription"),
 );
 
 router.get(
@@ -28,6 +30,7 @@ router.patch(
   authMiddleware.protect,
   authMiddleware.authorize("farmacia", "administrador"),
   prescriptionController.validatePrescription,
+  audit("PRESCRIPTION_VALIDATED", "Prescription"),
 );
 
 router.get(

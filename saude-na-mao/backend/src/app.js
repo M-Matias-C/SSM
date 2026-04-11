@@ -16,6 +16,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const faqRoutes = require("./routes/faqRoutes");
 const supportRoutes = require("./routes/supportRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
@@ -80,6 +81,9 @@ app.use("/api/v1/faq", faqRoutes);
 
 // Rotas de suporte
 app.use("/api/v1/support", supportRoutes);
+
+// Rotas administrativas
+app.use("/api/v1/admin", adminRoutes);
 
 // 404 handler
 app.use((req, res, next) => {
