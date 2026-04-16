@@ -1,0 +1,116 @@
+const mongoose = require("mongoose");
+const mongoosePaginate = require("mongoose-paginate-v2");
+
+const productSchema = new mongoose.Schema(
+  {
+    nome: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    principio_ativo: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    categoria: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    dosagem: {
+      type: String,
+      trim: true,
+    },
+    fabricante: {
+      type: String,
+      trim: true,
+    },
+    descricao: {
+      type: String,
+      trim: true,
+    },
+    preco: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    preco_promocional: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+    estoque: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
+    receita_obrigatoria: {
+      type: Boolean,
+      default: false,
+    },
+    controlado: {
+      type: Boolean,
+      default: false,
+    },
+    imagens: {
+      type: [String],
+      default: [],
+    },
+    id_farmacia: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Pharmacy",
+      required: true,
+      index: true,
+    },
+    ativo: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  },
+);
+
+productSchema.virtual("preco_final").get(function () {
+  if (
+    this.preco_promocional !== null &&
+    this.preco_promocional !== undefined &&
+    this.preco_promocional < this.preco
+  ) {
+    return this.preco_promocional;
+  }
+  return this.preco;
+});
+
+productSchema.index(
+  {
+    nome: "text",
+    principio_ativo: "text",
+    categoria: "text",
+    fabricante: "text",
+    descricao: "text",
+  },
+  {
+    weights: {
+      nome: 10,
+      principio_ativo: 8,
+      categoria: 5,
+      fabricante: 3,
+      descricao: 1,
+    },
+  },
+);
+
+productSchema.index({ preco: 1 });
+productSchema.index({ estoque: 1 });
+productSchema.index({ controlado: 1 });
+
+productSchema.plugin(mongoosePaginate);
+
+module.exports =
+  mongoose.models.Product || mongoose.model("Product", productSchema);

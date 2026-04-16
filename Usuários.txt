@@ -1,0 +1,14 @@
+Usuários
+
+Admin
+teste: admin@saudenamao.com
+senha: Admin@123
+
+Teste
+e-mail: teste@teste.com
+senha: Teste@123
+
+Farmaceutico
+e-mail: farmaceutico@farmaceutico.com
+senha: Farmaceutico@123
+
