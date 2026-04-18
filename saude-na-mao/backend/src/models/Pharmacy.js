@@ -77,11 +77,60 @@ const pharmacySchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    id_dono: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      index: true,
+    },
+    alvara_sanitario: {
+      type: String,
+      trim: true,
+    },
+    licenca_anvisa: {
+      type: String,
+      trim: true,
+    },
+    farmaceutico_responsavel: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    logo: {
+      type: String,
+      default: null,
+    },
+    descricao: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
+    },
+    formas_pagamento: [{
+      type: String,
+      enum: ["pix", "cartao_credito", "cartao_debito", "dinheiro"],
+    }],
+    tipos_entrega: [{
+      type: String,
+      enum: ["moto", "bicicleta", "retirada"],
+    }],
+    raio_entrega_km: {
+      type: Number,
+      default: 10,
+      min: 1,
+      max: 50,
+    },
+    taxa_entrega_base: {
+      type: Number,
+      default: 5,
+      min: 0,
+    },
+    taxa_por_km: {
+      type: Number,
+      default: 1.5,
+      min: 0,
+    },
     location: {
       type: {
         type: String,
         enum: ["Point"],
-        default: "Point",
       },
       coordinates: {
         type: [Number],
@@ -93,7 +142,10 @@ const pharmacySchema = new mongoose.Schema(
   },
 );
 
-pharmacySchema.index({ location: "2dsphere" });
+pharmacySchema.index(
+  { location: "2dsphere" },
+  { partialFilterExpression: { "location.coordinates": { $exists: true } } }
+);
 
 pharmacySchema.plugin(mongoosePaginate);
 

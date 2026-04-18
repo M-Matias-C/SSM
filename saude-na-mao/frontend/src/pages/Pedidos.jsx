@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/store'
+import { useUiStore } from '../stores/store'
 import { orderService } from '../services/api'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Alert from '../components/Alert'
-import { Package, MapPin, Calendar, Truck, FileText } from 'lucide-react'
+import ReviewModal from '../components/ReviewModal'
+import { Package, MapPin, Calendar, Truck, FileText, RefreshCw, AlertCircle, Star, RotateCcw } from 'lucide-react'
 
 export default function Pedidos() {
   const navigate = useNavigate()
@@ -13,6 +15,8 @@ export default function Pedidos() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState('todos')
+  const [reviewOrder, setReviewOrder] = useState(null)
+  const addNotification = useUiStore(s => s.addNotification)
 
   useEffect(() => {
     if (!token) {
@@ -31,6 +35,7 @@ export default function Pedidos() {
       setOrders(list)
     } catch (err) {
       console.error('Erro ao carregar pedidos:', err)
+      setError('Não foi possível carregar seus pedidos')
       setOrders([])
     } finally {
       setLoading(false)
@@ -70,20 +75,40 @@ export default function Pedidos() {
       <h1 className="text-3xl font-bold mb-8">Meus Pedidos</h1>
 
       <div className="mb-6 flex flex-wrap gap-2">
-        {['todos', 'confirmado', 'enviado', 'entregue'].map((status) => (
+        {[
+          { key: 'todos', label: 'Todos' },
+          { key: 'aguardando_pagamento', label: 'Aguardando' },
+          { key: 'confirmado', label: 'Confirmado' },
+          { key: 'enviado', label: 'Enviado' },
+          { key: 'entregue', label: 'Entregue' },
+          { key: 'cancelado', label: 'Cancelado' },
+        ].map(({ key, label }) => (
           <button
-            key={status}
-            onClick={() => setFilter(status)}
+            key={key}
+            onClick={() => setFilter(key)}
             className={`px-4 py-2 rounded-lg font-medium transition ${
-              filter === status
+              filter === key
                 ? 'bg-primary text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
+            {label}
           </button>
         ))}
       </div>
+
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" />
+          <p className="text-red-700 font-medium mb-3">{error}</p>
+          <button
+            onClick={() => { setError(null); loadOrders() }}
+            className="inline-flex items-center gap-2 bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 transition"
+          >
+            <RefreshCw className="w-4 h-4" /> Tentar novamente
+          </button>
+        </div>
+      )}
 
       {filteredOrders.length === 0 ? (
         <div className="text-center py-16 bg-gray-50 rounded-lg">
@@ -149,6 +174,34 @@ export default function Pedidos() {
                     <Truck className="w-4 h-4" />
                     <span>Rastrear</span>
                   </Link>
+                  {order.status === 'entregue' && (
+                    <button
+                      onClick={() => setReviewOrder(order)}
+                      className="inline-flex items-center gap-2 border border-yellow-400 text-yellow-700 px-4 py-2 rounded-lg hover:bg-yellow-50 transition w-full justify-center"
+                    >
+                      <Star className="w-4 h-4" />
+                      <span>Avaliar</span>
+                    </button>
+                  )}
+                  {order.status === 'entregue' && (
+                    <button
+                      onClick={() => {
+                        const reorderItems = (order.itens || []).map(i => ({
+                          id: i.id_produto,
+                          nome: i.nome_produto || i.nome,
+                          preco: i.preco_unitario,
+                          quantity: i.quantidade,
+                          id_farmacia: order.id_farmacia?._id || order.id_farmacia,
+                        }))
+                        localStorage.setItem('reorder_items', JSON.stringify(reorderItems))
+                        navigate('/carrinho')
+                      }}
+                      className="inline-flex items-center gap-2 border border-emerald-400 text-emerald-700 px-4 py-2 rounded-lg hover:bg-emerald-50 transition w-full justify-center"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      <span>Reordenar</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -177,6 +230,15 @@ export default function Pedidos() {
             </div>
           ))}
         </div>
+      )}
+
+      {reviewOrder && (
+        <ReviewModal
+          pharmacyId={reviewOrder.id_farmacia?._id || reviewOrder.id_farmacia}
+          pharmacyName={reviewOrder.id_farmacia?.nome || 'Farmácia'}
+          onClose={() => setReviewOrder(null)}
+          onSuccess={() => addNotification({ type: 'success', title: 'Avaliação enviada!', message: 'Obrigado pelo seu feedback' })}
+        />
       )}
     </div>
   )

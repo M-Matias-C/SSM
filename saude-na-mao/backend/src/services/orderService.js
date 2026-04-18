@@ -3,8 +3,10 @@ const Order = require("../models/Order");
 const Product = require("../models/Product");
 const User = require("../models/User");
 const { sendOrderStatusNotification } = require("./notificationService");
+const { sendOrderConfirmation, sendOrderStatusEmail } = require("../utils/emailTemplates");
 const { getIO } = require("../config/socket");
 const crypto = require("crypto");
+const QRCode = require("qrcode");
 
 const ALLOWED_STATUS_TRANSITIONS = {
   aguardando_pagamento: ["cancelado"],
@@ -110,7 +112,7 @@ async function notifyOrderStatus(order, novoStatus) {
   }
 
   const usuario = await User.findById(order.id_usuario).select(
-    "nome telefone +fcmToken",
+    "nome email telefone +fcmToken",
   );
 
   if (usuario) {
@@ -119,6 +121,8 @@ async function notifyOrderStatus(order, novoStatus) {
       order,
       formatStatusForNotification(novoStatus),
     );
+    // Send transactional email
+    sendOrderStatusEmail(order, novoStatus, usuario.email).catch(() => {});
   }
 
   order.notificacoes_enviadas.push(novoStatus);
@@ -178,6 +182,12 @@ async function createOrder(userId, orderData) {
         $inc: { estoque: -item.quantidade },
       });
     }
+  }
+
+  // Send order confirmation email
+  const usuario = await User.findById(userId).select("email");
+  if (usuario?.email) {
+    sendOrderConfirmation(order, usuario.email).catch(() => {});
   }
 
   return order;
@@ -472,6 +482,58 @@ async function getOrderStats(pharmacyId) {
   };
 }
 
+async function generateDeliveryQRCode(orderId, userId) {
+  const order = await findOrderOrThrow({ _id: orderId, id_usuario: userId });
+
+  if (order.status === "cancelado" || order.status === "entregue") {
+    throw createError("QR Code indisponível para este status", 400);
+  }
+
+  const token = crypto.randomBytes(16).toString("hex");
+  order.qr_token = token;
+  await order.save();
+
+  const payload = JSON.stringify({
+    orderId: order._id.toString(),
+    token,
+    ts: Date.now(),
+  });
+
+  const qrDataUrl = await QRCode.toDataURL(payload, {
+    width: 300,
+    margin: 2,
+    color: { dark: "#059669", light: "#ffffff" },
+  });
+
+  return { qrDataUrl, token };
+}
+
+async function confirmDeliveryByQR(orderId, token) {
+  const order = await findOrderOrThrow({ _id: orderId });
+
+  if (order.status === "entregue") {
+    throw createError("Pedido já foi entregue", 400);
+  }
+
+  if (!order.qr_token || order.qr_token !== token) {
+    throw createError("QR Code inválido", 403);
+  }
+
+  order.status = "entregue";
+  order.entregue_em = new Date();
+  order.qr_token = undefined;
+  order.historico_status.push({
+    status: "entregue",
+    observacao: "Entrega confirmada via QR Code",
+  });
+  await order.save();
+
+  await emitOrderStatus(orderId, "entregue", "Confirmado via QR Code");
+  await notifyOrderStatus(order, "entregue");
+
+  return order;
+}
+
 module.exports = {
   createOrder,
   getOrderById,
@@ -483,5 +545,7 @@ module.exports = {
   updateDeliveryLocation,
   rateDelivery,
   generatePickupCode,
+  generateDeliveryQRCode,
+  confirmDeliveryByQR,
   getOrderStats,
 };

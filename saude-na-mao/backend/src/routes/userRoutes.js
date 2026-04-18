@@ -82,4 +82,10 @@ router.get(
   userController.searchCep,
 );
 
+// LGPD - Exportar dados pessoais (Art. 18, V)
+router.get("/lgpd/export", authMiddleware.protect, userController.exportData);
+
+// LGPD - Solicitar exclusão de conta (Art. 18, VI)
+router.delete("/lgpd/delete-account", authMiddleware.protect, userController.deleteAccount);
+
 module.exports = router;

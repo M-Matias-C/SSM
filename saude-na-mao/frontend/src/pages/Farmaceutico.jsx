@@ -1,26 +1,32 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/store'
-import { prescriptionService, supportService } from '../services/api'
+import { prescriptionService, supportService, pharmacyOwnerService, productService } from '../services/api'
 import Alert from '../components/Alert'
 import {
   FileText, MessageSquare, CheckCircle, XCircle, Clock,
   Eye, Send, ChevronDown, ChevronUp, User, AlertTriangle,
-  ClipboardList, RefreshCw
+  ClipboardList, RefreshCw, Package, ShoppingCart,
+  TrendingUp, BarChart3, Plus, Edit2, DollarSign
 } from 'lucide-react'
 
 export default function Farmaceutico() {
   const navigate = useNavigate()
   const { user, isAuthenticated } = useAuthStore()
-  const [activeTab, setActiveTab] = useState('receitas')
+  const [activeTab, setActiveTab] = useState('dashboard')
+
+  const pharmacyId = user?.dados_dono_farmacia?.id_farmacia || user?.dados_farmaceutico?.id_farmacia
 
   useEffect(() => {
-    if (!isAuthenticated() || !['farmacia', 'administrador'].includes(user?.role)) {
+    if (!isAuthenticated() || !['dono_farmacia', 'farmaceutico', 'administrador'].includes(user?.role)) {
       navigate('/')
     }
   }, [user, isAuthenticated, navigate])
 
   const tabs = [
+    { id: 'dashboard', label: 'Visão Geral', icon: BarChart3 },
+    { id: 'pedidos', label: 'Pedidos', icon: ShoppingCart },
+    { id: 'produtos', label: 'Produtos', icon: Package },
     { id: 'receitas', label: 'Receitas Pendentes', icon: FileText },
     { id: 'tickets', label: 'Tickets de Suporte', icon: MessageSquare },
   ]
@@ -32,19 +38,19 @@ export default function Farmaceutico() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Painel do Farmacêutico</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Bem-vindo, {user?.nome?.split(' ')[0]}! Gerencie receitas e atendimentos.
+            Bem-vindo, {user?.nome?.split(' ')[0]}! Gerencie receitas, pedidos e produtos.
           </p>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 overflow-x-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-primary text-white shadow-md shadow-primary/20'
                     : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
@@ -58,9 +64,440 @@ export default function Farmaceutico() {
         </div>
 
         {/* Content */}
+        {activeTab === 'dashboard' && <DashboardPanel pharmacyId={pharmacyId} />}
+        {activeTab === 'pedidos' && <PedidosPanel pharmacyId={pharmacyId} />}
+        {activeTab === 'produtos' && <ProdutosPanel pharmacyId={pharmacyId} />}
         {activeTab === 'receitas' && <ReceitasPanel />}
         {activeTab === 'tickets' && <TicketsPanel />}
       </div>
+    </div>
+  )
+}
+
+/* ────────── Dashboard Panel ────────── */
+function DashboardPanel({ pharmacyId }) {
+  const [stats, setStats] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (pharmacyId) loadStats()
+    else setLoading(false)
+  }, [pharmacyId])
+
+  const loadStats = async () => {
+    try {
+      setLoading(true)
+      const res = await pharmacyOwnerService.getOrderStats(pharmacyId)
+      setStats(res.data?.data || {})
+    } catch {
+      setStats(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" /></div>
+
+  if (!pharmacyId) return (
+    <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+      <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+      <p className="text-gray-500">Nenhuma farmácia vinculada à sua conta.</p>
+    </div>
+  )
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Pedidos', value: stats?.total_pedidos ?? stats?.total ?? 0, icon: ShoppingCart, bg: 'bg-blue-50', text: 'text-blue-700' },
+          { label: 'Pedidos Pendentes', value: stats?.pendentes ?? 0, icon: Clock, bg: 'bg-yellow-50', text: 'text-yellow-700' },
+          { label: 'Pedidos Entregues', value: stats?.entregues ?? 0, icon: CheckCircle, bg: 'bg-green-50', text: 'text-green-700' },
+          { label: 'Receita Total', value: `R$ ${(Number(stats?.receita_total || stats?.faturamento || 0)).toFixed(2)}`, icon: TrendingUp, bg: 'bg-emerald-50', text: 'text-emerald-700' },
+        ].map(({ label, value, icon: Icon, bg, text }) => (
+          <div key={label} className={`${bg} rounded-xl p-5`}>
+            <Icon className={`w-6 h-6 ${text} mb-2`} />
+            <p className={`text-2xl font-bold ${text}`}>{value}</p>
+            <p className="text-sm text-gray-600 mt-1">{label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ────────── Pedidos Panel ────────── */
+function PedidosPanel({ pharmacyId }) {
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [message, setMessage] = useState(null)
+  const [statusFilter, setStatusFilter] = useState('')
+  const [actionLoading, setActionLoading] = useState(null)
+
+  useEffect(() => {
+    if (pharmacyId) loadOrders()
+    else setLoading(false)
+  }, [pharmacyId])
+
+  const loadOrders = async () => {
+    try {
+      setLoading(true)
+      const params = {}
+      if (statusFilter) params.status = statusFilter
+      const res = await pharmacyOwnerService.getOrders(pharmacyId, params)
+      const d = res.data?.data
+      setOrders(d?.pedidos || d?.docs || (Array.isArray(d) ? d : []))
+    } catch (err) {
+      setError('Erro ao carregar pedidos')
+      setOrders([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { if (pharmacyId) loadOrders() }, [statusFilter])
+
+  const handleUpdateStatus = async (orderId, newStatus) => {
+    try {
+      setActionLoading(orderId)
+      await pharmacyOwnerService.updateOrderStatus(orderId, newStatus)
+      setMessage(`Pedido atualizado para "${STATUS_LABELS[newStatus] || newStatus}"`)
+      loadOrders()
+      setTimeout(() => setMessage(null), 3000)
+    } catch (err) {
+      setError(err.response?.data?.message || 'Erro ao atualizar pedido')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const STATUS_LABELS = {
+    aguardando_pagamento: 'Aguardando Pagamento',
+    confirmado: 'Confirmado',
+    em_processamento: 'Em Processamento',
+    enviado: 'Enviado',
+    entregue: 'Entregue',
+    cancelado: 'Cancelado',
+  }
+
+  const STATUS_NEXT = {
+    confirmado: 'em_processamento',
+    em_processamento: 'enviado',
+  }
+
+  const STATUS_COLORS = {
+    aguardando_pagamento: 'bg-gray-100 text-gray-700',
+    confirmado: 'bg-blue-100 text-blue-700',
+    em_processamento: 'bg-yellow-100 text-yellow-700',
+    enviado: 'bg-purple-100 text-purple-700',
+    entregue: 'bg-green-100 text-green-700',
+    cancelado: 'bg-red-100 text-red-700',
+  }
+
+  if (!pharmacyId) return (
+    <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+      <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+      <p className="text-gray-500">Nenhuma farmácia vinculada.</p>
+    </div>
+  )
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div className="flex items-center justify-between p-5 border-b border-gray-100">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+            <ShoppingCart className="w-5 h-5 text-blue-500" />
+          </div>
+          <div>
+            <h2 className="font-bold text-gray-900">Pedidos da Farmácia</h2>
+            <p className="text-xs text-gray-400">{orders.length} pedido(s)</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 border rounded-lg text-sm"
+          >
+            <option value="">Todos</option>
+            {Object.entries(STATUS_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>{v}</option>
+            ))}
+          </select>
+          <button onClick={loadOrders} disabled={loading} className="p-2 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-xl transition">
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      {message && <div className="px-5 pt-4"><Alert type="success" message={message} /></div>}
+      {error && <div className="px-5 pt-4"><Alert type="error" message={error} onClose={() => setError(null)} /></div>}
+
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+        </div>
+      ) : orders.length === 0 ? (
+        <div className="text-center py-16">
+          <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500 font-medium">Nenhum pedido encontrado</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left font-semibold">Pedido</th>
+                <th className="px-4 py-3 text-left font-semibold">Cliente</th>
+                <th className="px-4 py-3 text-left font-semibold">Status</th>
+                <th className="px-4 py-3 text-left font-semibold">Total</th>
+                <th className="px-4 py-3 text-left font-semibold">Data</th>
+                <th className="px-4 py-3 text-left font-semibold">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((order) => {
+                const nextStatus = STATUS_NEXT[order.status]
+                return (
+                  <tr key={order._id} className="border-b hover:bg-gray-50">
+                    <td className="px-4 py-3 font-mono text-xs">#{(order._id || '').slice(-8).toUpperCase()}</td>
+                    <td className="px-4 py-3">{order.id_usuario?.nome || '-'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[order.status] || 'bg-gray-100'}`}>
+                        {STATUS_LABELS[order.status] || order.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-semibold">R$ {(Number(order.total || order.valorTotal || 0)).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">{new Date(order.createdAt).toLocaleDateString('pt-BR')}</td>
+                    <td className="px-4 py-3">
+                      {nextStatus && (
+                        <button
+                          onClick={() => handleUpdateStatus(order._id, nextStatus)}
+                          disabled={actionLoading === order._id}
+                          className="px-3 py-1 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-secondary transition disabled:opacity-50"
+                        >
+                          {actionLoading === order._id ? '...' : `→ ${STATUS_LABELS[nextStatus]}`}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ────────── Produtos Panel ────────── */
+function ProdutosPanel({ pharmacyId }) {
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [message, setMessage] = useState(null)
+  const [showForm, setShowForm] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [form, setForm] = useState({
+    nome: '', descricao: '', preco: '', estoque: '', categoria: '', principio_ativo: '',
+  })
+
+  useEffect(() => {
+    if (pharmacyId) loadProducts()
+    else setLoading(false)
+  }, [pharmacyId])
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true)
+      const res = await pharmacyOwnerService.getPharmacy(pharmacyId)
+      // Try to get products from pharmacy endpoint
+      try {
+        const prodRes = await productService.getAll({ id_farmacia: pharmacyId })
+        const d = prodRes.data?.data
+        setProducts(d?.produtos || d?.docs || (Array.isArray(d) ? d : []))
+      } catch {
+        setProducts([])
+      }
+    } catch {
+      setProducts([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const resetForm = () => {
+    setForm({ nome: '', descricao: '', preco: '', estoque: '', categoria: '', principio_ativo: '' })
+    setEditingId(null)
+    setShowForm(false)
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    try {
+      setSaving(true)
+      const payload = { ...form, preco: Number(form.preco), estoque: Number(form.estoque), id_farmacia: pharmacyId }
+      if (editingId) {
+        await pharmacyOwnerService.updateProduct(editingId, payload)
+        setMessage('Produto atualizado!')
+      } else {
+        await pharmacyOwnerService.createProduct(payload)
+        setMessage('Produto criado!')
+      }
+      resetForm()
+      loadProducts()
+      setTimeout(() => setMessage(null), 3000)
+    } catch (err) {
+      setError(err.response?.data?.message || 'Erro ao salvar produto')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleEdit = (p) => {
+    setForm({
+      nome: p.nome || '',
+      descricao: p.descricao || '',
+      preco: String(p.preco || ''),
+      estoque: String(p.estoque || ''),
+      categoria: p.categoria || '',
+      principio_ativo: p.principio_ativo || '',
+    })
+    setEditingId(p._id)
+    setShowForm(true)
+  }
+
+  if (!pharmacyId) return (
+    <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+      <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+      <p className="text-gray-500">Nenhuma farmácia vinculada.</p>
+    </div>
+  )
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div className="flex items-center justify-between p-5 border-b border-gray-100">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+            <Package className="w-5 h-5 text-emerald-500" />
+          </div>
+          <div>
+            <h2 className="font-bold text-gray-900">Produtos</h2>
+            <p className="text-xs text-gray-400">{products.length} produto(s)</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { if (showForm) resetForm(); else setShowForm(true) }}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition ${
+              showForm ? 'bg-gray-200 text-gray-600 hover:bg-gray-300' : 'bg-primary text-white hover:bg-secondary'
+            }`}
+          >
+            {showForm ? <XCircle className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+            {showForm ? 'Cancelar' : 'Novo Produto'}
+          </button>
+          <button onClick={loadProducts} disabled={loading} className="p-2 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-xl transition">
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      {message && <div className="px-5 pt-4"><Alert type="success" message={message} /></div>}
+      {error && <div className="px-5 pt-4"><Alert type="error" message={error} onClose={() => setError(null)} /></div>}
+
+      {showForm && (
+        <form onSubmit={handleSubmit} className="p-5 border-b border-gray-100 bg-gray-50/50 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Nome *</label>
+              <input type="text" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Categoria</label>
+              <input type="text" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Descrição</label>
+            <textarea rows={2} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Preço (R$) *</label>
+              <input type="number" step="0.01" min="0" value={form.preco} onChange={(e) => setForm({ ...form, preco: e.target.value })} required
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Estoque *</label>
+              <input type="number" min="0" value={form.estoque} onChange={(e) => setForm({ ...form, estoque: e.target.value })} required
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Princípio Ativo</label>
+              <input type="text" value={form.principio_ativo} onChange={(e) => setForm({ ...form, principio_ativo: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+          </div>
+          <button type="submit" disabled={saving}
+            className="w-full py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-secondary transition disabled:opacity-50">
+            {saving ? 'Salvando...' : editingId ? 'Atualizar Produto' : 'Criar Produto'}
+          </button>
+        </form>
+      )}
+
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+        </div>
+      ) : products.length === 0 && !showForm ? (
+        <div className="text-center py-16">
+          <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500 font-medium">Nenhum produto cadastrado</p>
+          <p className="text-xs text-gray-400 mt-1">Adicione produtos para sua farmácia</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left font-semibold">Nome</th>
+                <th className="px-4 py-3 text-left font-semibold">Categoria</th>
+                <th className="px-4 py-3 text-left font-semibold">Preço</th>
+                <th className="px-4 py-3 text-left font-semibold">Estoque</th>
+                <th className="px-4 py-3 text-left font-semibold">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((p) => (
+                <tr key={p._id} className="border-b hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium">{p.nome}</td>
+                  <td className="px-4 py-3 text-gray-600">{p.categoria || '-'}</td>
+                  <td className="px-4 py-3">R$ {(Number(p.preco || 0)).toFixed(2)}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      (p.estoque ?? 0) > 50 ? 'bg-green-100 text-green-800'
+                      : (p.estoque ?? 0) > 10 ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-red-100 text-red-800'
+                    }`}>
+                      {p.estoque ?? 0}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button onClick={() => handleEdit(p)} className="text-blue-600 hover:text-blue-800" title="Editar">
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

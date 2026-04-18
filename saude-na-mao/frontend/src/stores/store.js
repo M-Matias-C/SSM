@@ -79,7 +79,7 @@ export const useCartStore = create(
   devtools(
     persist(
       (set, get) => ({
-        items: JSON.parse(localStorage.getItem(STORAGE_KEYS.CART)) || [],
+        items: [],
 
         addItem: (product) => {
           const state = get()
@@ -195,4 +195,33 @@ export const useUiStore = create(
       }))
     },
   }))
+)
+
+export const useFavoritesStore = create(
+  devtools(
+    persist(
+      (set, get) => ({
+        items: [],
+
+        toggleFavorite: (product) => {
+          set((state) => {
+            const exists = state.items.find((i) => i.id === product.id)
+            if (exists) {
+              return { items: state.items.filter((i) => i.id !== product.id) }
+            }
+            return { items: [...state.items, { id: product.id, nome: product.nome, preco: product.preco, imagem_url: product.imagem_url, id_farmacia: product.id_farmacia }] }
+          })
+        },
+
+        isFavorite: (productId) => {
+          return get().items.some((i) => i.id === productId)
+        },
+
+        clearFavorites: () => set({ items: [] }),
+      }),
+      {
+        name: STORAGE_KEYS.FAVORITES,
+      }
+    )
+  )
 )

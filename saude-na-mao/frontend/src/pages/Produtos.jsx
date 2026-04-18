@@ -1,9 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { useCartStore, useUiStore } from '../stores/store'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { productService, pharmacyService } from '../services/api'
-import { Search, Filter, ShoppingCart, Store, ArrowUpDown, AlertTriangle, FileText } from 'lucide-react'
+import { Search, Filter, ShoppingCart, Store, ArrowUpDown, AlertTriangle, FileText, ShieldOff } from 'lucide-react'
+
+const TARJA_CONFIG = {
+  sem_receita: null,
+  tarja_vermelha: { label: 'Tarja Vermelha', bg: 'bg-red-50', text: 'text-red-700', border: 'border-l-4 border-l-red-500' },
+  tarja_preta: { label: 'Tarja Preta', bg: 'bg-gray-900', text: 'text-white', border: 'border-l-4 border-l-black' },
+  antimicrobiano: { label: 'Antimicrobiano', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-l-4 border-l-blue-500' },
+  controlado_a: { label: 'Controlado A (proibido online)', bg: 'bg-yellow-50', text: 'text-yellow-800', border: 'border-l-4 border-l-yellow-500' },
+}
 
 export default function Produtos() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -15,6 +23,34 @@ export default function Produtos() {
   const [priceRange, setPriceRange] = useState([0, 500])
   const [categoryFilter, setCategoryFilter] = useState('')
   const [pharmacyFilter, setPharmacyFilter] = useState('')
+  const [suggestions, setSuggestions] = useState([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const debounceRef = useRef(null)
+  const searchWrapperRef = useRef(null)
+
+  const fetchSuggestions = useCallback((term) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (!term || term.length < 2) { setSuggestions([]); return }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await productService.search(term)
+        const data = res.data?.data
+        const list = Array.isArray(data) ? data : data?.docs ?? []
+        setSuggestions(list.slice(0, 6))
+        setShowSuggestions(true)
+      } catch { setSuggestions([]) }
+    }, 300)
+  }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchWrapperRef.current && !searchWrapperRef.current.contains(e.target)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const query = searchParams.get('search')
 
@@ -95,16 +131,45 @@ export default function Produtos() {
         </h1>
         <p className="text-gray-500 mb-4">Compare preços entre farmácias e encontre o melhor</p>
 
-        <form onSubmit={handleSearch} className="flex gap-3">
+        <form onSubmit={handleSearch} className="flex gap-3" ref={searchWrapperRef}>
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
               value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
+              onChange={(e) => { setSearchInput(e.target.value); fetchSuggestions(e.target.value) }}
+              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
               placeholder="Buscar medicamentos, princípios ativos..."
               className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
             />
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                {suggestions.map((s) => (
+                  <button
+                    key={s._id}
+                    type="button"
+                    onClick={() => {
+                      setSearchInput(s.nome)
+                      setShowSuggestions(false)
+                      setSearchParams({ search: s.nome })
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50 transition text-sm"
+                  >
+                    {s.imagem_url ? (
+                      <img src={s.imagem_url} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="w-8 h-8 rounded bg-gray-100 flex-shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{s.nome}</p>
+                      <p className="text-xs text-gray-400">
+                        R$ {(s.preco_final || s.preco)?.toFixed(2)}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <button
             type="submit"
@@ -229,6 +294,8 @@ function ProductCardWithPharmacy({ product, pharmacy, pharmacyId }) {
 
   const preco = product.preco_final || product.preco
   const temPromocao = product.preco_promocional && product.preco_promocional < product.preco
+  const tarja = TARJA_CONFIG[product.classificacao_receita] || null
+  const isBlockedOnline = product.classificacao_receita === 'controlado_a'
 
   const pharmacyName = pharmacy?.nome || 'Farmácia'
 
@@ -263,7 +330,14 @@ function ProductCardWithPharmacy({ product, pharmacy, pharmacyId }) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition-all">
+    <div className={`bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition-all ${tarja?.border || ''} ${isBlockedOnline ? 'opacity-75' : ''}`}>
+      {/* Tarja classification bar */}
+      {tarja && (
+        <div className={`px-4 py-1.5 ${tarja.bg} ${tarja.text} text-[10px] font-bold flex items-center gap-1`}>
+          {isBlockedOnline ? <ShieldOff className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
+          {tarja.label}
+        </div>
+      )}
       {/* Pharmacy badge */}
       <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center gap-2">
         <Store className="w-3.5 h-3.5 text-primary" />
@@ -297,13 +371,13 @@ function ProductCardWithPharmacy({ product, pharmacy, pharmacyId }) {
         </div>
 
         {/* Badges */}
-        <div className="flex gap-2 mt-3">
-          {product.controlado && (
-            <span className="flex items-center gap-1 text-[10px] font-bold bg-red-50 text-red-600 px-2 py-1 rounded-lg">
-              <AlertTriangle className="w-3 h-3" /> Controlado
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          {product.classificacao_receita === 'antimicrobiano' && (
+            <span className="flex items-center gap-1 text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded-lg">
+              <FileText className="w-3 h-3" /> Validade: 10 dias
             </span>
           )}
-          {product.receita_obrigatoria && (
+          {product.receita_obrigatoria && !isBlockedOnline && (
             <span className="flex items-center gap-1 text-[10px] font-bold bg-amber-50 text-amber-600 px-2 py-1 rounded-lg">
               <FileText className="w-3 h-3" /> Receita obrigatória
             </span>
@@ -314,6 +388,15 @@ function ProductCardWithPharmacy({ product, pharmacy, pharmacyId }) {
             </span>
           )}
         </div>
+
+        {/* Blocked notice for controlado_a */}
+        {isBlockedOnline && (
+          <div className="mt-3 p-2.5 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-xs text-yellow-800 font-medium">
+              Venda online proibida por lei (ANVISA RDC 44/2009). Consulte uma farmácia presencialmente.
+            </p>
+          </div>
+        )}
 
         {/* Price + add */}
         <div className="flex items-end justify-between mt-3 pt-3 border-t border-gray-50">
@@ -333,7 +416,7 @@ function ProductCardWithPharmacy({ product, pharmacy, pharmacyId }) {
             )}
           </div>
 
-          {product.estoque > 0 && (
+          {product.estoque > 0 && !isBlockedOnline && (
             <div className="flex items-center gap-2">
               <div className="flex items-center border rounded-lg overflow-hidden">
                 <button

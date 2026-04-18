@@ -54,6 +54,42 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    classificacao_receita: {
+      type: String,
+      enum: [
+        "sem_receita",
+        "tarja_vermelha",
+        "tarja_preta",
+        "antimicrobiano",
+        "controlado_a",
+      ],
+      default: "sem_receita",
+    },
+    registro_anvisa: {
+      type: String,
+      trim: true,
+    },
+    codigo_ean: {
+      type: String,
+      trim: true,
+    },
+    forma_farmaceutica: {
+      type: String,
+      trim: true,
+    },
+    interacoes: [{
+      principio_ativo: { type: String, trim: true },
+      severidade: {
+        type: String,
+        enum: ["leve", "moderada", "grave"],
+        default: "moderada",
+      },
+      descricao: { type: String, trim: true },
+    }],
+    contraindicacoes: {
+      type: String,
+      trim: true,
+    },
     imagens: {
       type: [String],
       default: [],
@@ -109,6 +145,7 @@ productSchema.index(
 productSchema.index({ preco: 1 });
 productSchema.index({ estoque: 1 });
 productSchema.index({ controlado: 1 });
+productSchema.index({ classificacao_receita: 1 });
 
 productSchema.plugin(mongoosePaginate);
 

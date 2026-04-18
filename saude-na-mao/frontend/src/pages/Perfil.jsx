@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/store'
-import { userService, orderService, prescriptionService, supportService } from '../services/api'
+import { userService, orderService, prescriptionService, supportService, pharmacyOwnerService } from '../services/api'
 import Alert from '../components/Alert'
 import LoadingSpinner from '../components/LoadingSpinner'
 import {
@@ -9,7 +9,7 @@ import {
   Package, Heart, CreditCard, FileText, ChevronRight,
   ShoppingBag, Star, Clock, Shield, Bell, HelpCircle,
   Plus, Trash2, CheckCircle, X, MessageSquare, Send,
-  RefreshCw,
+  RefreshCw, Bike, Car, Award, Store, Clipboard,
 } from 'lucide-react'
 
 export default function Perfil() {
@@ -20,7 +20,10 @@ export default function Perfil() {
   const [error, setError] = useState(null)
   const [editMode, setEditMode] = useState(false)
   const [activeTab, setActiveTab] = useState('dados')
+  const [showPasswordForm, setShowPasswordForm] = useState(false)
+  const [passwordData, setPasswordData] = useState({ senhaAtual: '', novaSenha: '', confirmarSenha: '' })
   const [stats, setStats] = useState({ pedidos: 0, receitas: 0 })
+  const [pharmacyInfo, setPharmacyInfo] = useState(null)
   const [formData, setFormData] = useState({
     nome: user?.nome || '',
     email: user?.email || '',
@@ -46,6 +49,16 @@ export default function Perfil() {
         pedidos: ordersRes.status === 'fulfilled' ? (ordersRes.value?.data?.data?.pedidos?.length || ordersRes.value?.data?.data?.total || 0) : 0,
         receitas: prescRes.status === 'fulfilled' ? (prescRes.value?.data?.data?.docs?.length || prescRes.value?.data?.data?.total || 0) : 0,
       })
+
+      // Load pharmacy info for pharmacy roles
+      const role = user?.tipo_usuario || user?.role
+      const pharmacyId = user?.dados_dono_farmacia?.id_farmacia || user?.dados_farmaceutico?.id_farmacia
+      if (['dono_farmacia', 'farmaceutico'].includes(role) && pharmacyId) {
+        try {
+          const pharmRes = await pharmacyOwnerService.getPharmacy(pharmacyId)
+          setPharmacyInfo(pharmRes.data?.data || null)
+        } catch {}
+      }
     } catch {}
   }
 
@@ -76,14 +89,54 @@ export default function Perfil() {
     navigate('/')
   }
 
+  const handlePasswordChange = async (e) => {
+    e.preventDefault()
+    setError(null)
+    if (passwordData.novaSenha !== passwordData.confirmarSenha) {
+      setError('As senhas não coincidem')
+      return
+    }
+    if (passwordData.novaSenha.length < 6) {
+      setError('A nova senha deve ter pelo menos 6 caracteres')
+      return
+    }
+    setLoading(true)
+    try {
+      await userService.updatePassword(passwordData.senhaAtual, passwordData.novaSenha)
+      setMessage('Senha alterada com sucesso!')
+      setShowPasswordForm(false)
+      setPasswordData({ senhaAtual: '', novaSenha: '', confirmarSenha: '' })
+      setTimeout(() => setMessage(null), 3000)
+    } catch (err) {
+      setError(err.response?.data?.message || err.response?.data?.mensagem || 'Erro ao alterar senha')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (!token) return <LoadingSpinner />
 
-  const isPharmacist = user?.tipo_usuario === 'farmacia' || user?.role === 'farmacia'
+  const isPharmacyRole = ['dono_farmacia', 'farmaceutico'].includes(user?.tipo_usuario || user?.role)
+  const isDriver = (user?.tipo_usuario || user?.role) === 'entregador'
+  const isAdmin = (user?.tipo_usuario || user?.role) === 'administrador'
+  const userRole = user?.tipo_usuario || user?.role
+
+  const ROLE_BADGE = {
+    cliente: { label: 'Cliente', bg: 'bg-white/20' },
+    entregador: { label: 'Entregador', bg: 'bg-yellow-400/20' },
+    dono_farmacia: { label: 'Dono de Farmácia', bg: 'bg-emerald-400/20' },
+    farmaceutico: { label: 'Farmacêutico', bg: 'bg-purple-400/20' },
+    administrador: { label: 'Administrador', bg: 'bg-red-400/20' },
+  }
+
+  const roleBadge = ROLE_BADGE[userRole] || ROLE_BADGE.cliente
 
   const menuItems = [
     { id: 'dados', label: 'Meus Dados', icon: User, color: 'text-primary' },
-    isPharmacist
+    isPharmacyRole
       ? { id: 'painel', label: 'Painel do Farmacêutico', icon: Package, link: '/farmaceutico', color: 'text-blue-500' }
+      : isDriver
+      ? { id: 'entregas', label: 'Minhas Entregas', icon: Package, link: '/entregas', color: 'text-blue-500' }
       : { id: 'pedidos', label: 'Meus Pedidos', icon: Package, link: '/pedidos', color: 'text-blue-500' },
     { id: 'chats', label: 'Meus Chats', icon: MessageSquare, color: 'text-indigo-500' },
     { id: 'receitas', label: 'Minhas Receitas', icon: FileText, color: 'text-amber-500' },
@@ -100,7 +153,12 @@ export default function Perfil() {
             {user?.nome?.charAt(0)?.toUpperCase() || '👤'}
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold truncate">{user?.nome || 'Usuário'}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold truncate">{user?.nome || 'Usuário'}</h1>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${roleBadge.bg}`}>
+                {roleBadge.label}
+              </span>
+            </div>
             <p className="text-white/70 text-sm">{user?.email}</p>
             {user?.telefone && <p className="text-white/70 text-sm">{user.telefone}</p>}
             <div className="flex gap-4 mt-3">
@@ -113,6 +171,20 @@ export default function Perfil() {
                 <div className="text-xl font-bold">{stats.receitas}</div>
                 <div className="text-[10px] text-white/60 uppercase tracking-wide">Receitas</div>
               </div>
+              {isDriver && user?.dados_entregador && (
+                <>
+                  <div className="w-px bg-white/20" />
+                  <div className="text-center">
+                    <div className="text-xl font-bold">{user.dados_entregador.entregas_realizadas || 0}</div>
+                    <div className="text-[10px] text-white/60 uppercase tracking-wide">Entregas</div>
+                  </div>
+                  <div className="w-px bg-white/20" />
+                  <div className="text-center">
+                    <div className="text-xl font-bold">{user.dados_entregador.avaliacao?.toFixed(1) || '-'}</div>
+                    <div className="text-[10px] text-white/60 uppercase tracking-wide">Avaliação</div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -257,6 +329,203 @@ export default function Perfil() {
                   </div>
                 )}
               </form>
+
+              {/* Password Change */}
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <button
+                  onClick={() => setShowPasswordForm(!showPasswordForm)}
+                  className="flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-primary transition"
+                >
+                  <Lock className="w-4 h-4" />
+                  Alterar Senha
+                  <ChevronRight className={`w-4 h-4 transition-transform ${showPasswordForm ? 'rotate-90' : ''}`} />
+                </button>
+
+                {showPasswordForm && (
+                  <form onSubmit={handlePasswordChange} className="mt-4 space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1.5">Senha Atual</label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="password"
+                          value={passwordData.senhaAtual}
+                          onChange={(e) => setPasswordData({ ...passwordData, senhaAtual: e.target.value })}
+                          required
+                          className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          placeholder="Digite sua senha atual"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1.5">Nova Senha</label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="password"
+                          value={passwordData.novaSenha}
+                          onChange={(e) => setPasswordData({ ...passwordData, novaSenha: e.target.value })}
+                          required
+                          minLength={6}
+                          className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          placeholder="Mínimo 6 caracteres"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1.5">Confirmar Nova Senha</label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="password"
+                          value={passwordData.confirmarSenha}
+                          onChange={(e) => setPasswordData({ ...passwordData, confirmarSenha: e.target.value })}
+                          required
+                          minLength={6}
+                          className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          placeholder="Repita a nova senha"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="flex-1 bg-primary text-white py-2.5 rounded-xl font-semibold hover:bg-secondary transition disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        <Lock className="w-4 h-4" /> Alterar Senha
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowPasswordForm(false)
+                          setPasswordData({ senhaAtual: '', novaSenha: '', confirmarSenha: '' })
+                        }}
+                        className="flex-1 border border-gray-200 py-2.5 rounded-xl font-semibold hover:bg-gray-50 transition"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+
+              {/* Role-Specific Info */}
+              {isDriver && user?.dados_entregador && (
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                  <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    <Bike className="w-4 h-4 text-yellow-500" />
+                    Dados de Entregador
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-xs text-gray-400">Veículo</p>
+                      <p className="font-medium capitalize">{user.dados_entregador.tipo_veiculo || '-'}</p>
+                    </div>
+                    {user.dados_entregador.placa && (
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-xs text-gray-400">Placa</p>
+                        <p className="font-medium">{user.dados_entregador.placa}</p>
+                      </div>
+                    )}
+                    {user.dados_entregador.cnh && (
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-xs text-gray-400">CNH</p>
+                        <p className="font-medium">{user.dados_entregador.cnh}</p>
+                      </div>
+                    )}
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-xs text-gray-400">Status</p>
+                      <p className={`font-medium ${user.dados_entregador.disponivel ? 'text-green-600' : 'text-red-600'}`}>
+                        {user.dados_entregador.disponivel ? 'Disponível' : 'Indisponível'}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-xs text-gray-400">Entregas Realizadas</p>
+                      <p className="font-medium">{user.dados_entregador.entregas_realizadas || 0}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-xs text-gray-400">Avaliação</p>
+                      <p className="font-medium flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+                        {user.dados_entregador.avaliacao?.toFixed(1) || '-'} ({user.dados_entregador.total_avaliacoes || 0})
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isPharmacyRole && (
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                  <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    <Store className="w-4 h-4 text-emerald-500" />
+                    {userRole === 'dono_farmacia' ? 'Dados da Farmácia' : 'Dados Profissionais'}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {user?.dados_farmaceutico?.crf && (
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-xs text-gray-400">CRF</p>
+                        <p className="font-medium flex items-center gap-1">
+                          {user.dados_farmaceutico.crf}
+                          {user.dados_farmaceutico.crf_verificado && (
+                            <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                          )}
+                        </p>
+                      </div>
+                    )}
+                    {user?.dados_farmaceutico?.especialidades?.length > 0 && (
+                      <div className="bg-gray-50 rounded-lg p-3 col-span-2">
+                        <p className="text-xs text-gray-400 mb-1">Especialidades</p>
+                        <div className="flex flex-wrap gap-1">
+                          {user.dados_farmaceutico.especialidades.map((e) => (
+                            <span key={e} className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full capitalize">
+                              {e.replace(/_/g, ' ')}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {pharmacyInfo && (
+                      <>
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <p className="text-xs text-gray-400">Farmácia</p>
+                          <p className="font-medium">{pharmacyInfo.nome}</p>
+                        </div>
+                        {pharmacyInfo.cnpj && (
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            <p className="text-xs text-gray-400">CNPJ</p>
+                            <p className="font-medium font-mono text-xs">{pharmacyInfo.cnpj}</p>
+                          </div>
+                        )}
+                        {(pharmacyInfo.cidade || pharmacyInfo.estado) && (
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            <p className="text-xs text-gray-400">Localização</p>
+                            <p className="font-medium">{[pharmacyInfo.cidade, pharmacyInfo.estado].filter(Boolean).join('/')}</p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {isAdmin && (
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                  <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-red-500" />
+                    Administrador
+                  </h3>
+                  <button
+                    onClick={() => navigate('/admin')}
+                    className="w-full py-2.5 bg-red-50 text-red-700 rounded-xl text-sm font-semibold hover:bg-red-100 transition"
+                  >
+                    Acessar Painel Administrativo
+                  </button>
+                </div>
+              )}
+
+              {/* LGPD — Privacidade e Dados */}
+              <LgpdSection user={user} logout={logout} navigate={navigate} />
             </div>
           )}
 
@@ -819,6 +1088,100 @@ function ReceitasTab() {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+function LgpdSection({ user, logout, navigate }) {
+  const [exporting, setExporting] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  const handleExport = async () => {
+    try {
+      setExporting(true)
+      const res = await userService.exportData()
+      const data = res.data?.data || res.data
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `meus-dados-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      alert('Erro ao exportar dados. Tente novamente.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    try {
+      setDeleting(true)
+      await userService.deleteAccount()
+      alert('Sua conta foi removida com sucesso.')
+      logout()
+      navigate('/login')
+    } catch (err) {
+      alert(err.response?.data?.message || 'Erro ao excluir conta. Verifique se não há pedidos ativos.')
+    } finally {
+      setDeleting(false)
+      setConfirmDelete(false)
+    }
+  }
+
+  return (
+    <div className="mt-6 pt-6 border-t border-gray-100">
+      <h3 className="text-sm font-bold text-gray-700 mb-1 flex items-center gap-2">
+        <Shield className="w-4 h-4 text-blue-500" />
+        Privacidade e Dados (LGPD)
+      </h3>
+      <p className="text-xs text-gray-400 mb-4">
+        Conforme a Lei Geral de Proteção de Dados (Lei 13.709/2018)
+      </p>
+
+      <div className="space-y-2">
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="w-full py-2.5 bg-blue-50 text-blue-700 rounded-xl text-sm font-semibold hover:bg-blue-100 transition disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          <FileText className="w-4 h-4" />
+          {exporting ? 'Exportando...' : 'Exportar Meus Dados'}
+        </button>
+
+        {!confirmDelete ? (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="w-full py-2.5 bg-red-50 text-red-600 rounded-xl text-sm font-semibold hover:bg-red-100 transition flex items-center justify-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            Solicitar Exclusão da Conta
+          </button>
+        ) : (
+          <div className="p-3 bg-red-50 rounded-xl border border-red-200">
+            <p className="text-xs text-red-700 mb-3 font-medium">
+              ⚠️ Esta ação é irreversível. Todos os seus dados pessoais serão anonimizados.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition disabled:opacity-50"
+              >
+                {deleting ? 'Excluindo...' : 'Confirmar Exclusão'}
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="flex-1 py-2 bg-white text-gray-600 rounded-lg text-sm font-semibold border border-gray-200 hover:bg-gray-50 transition"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

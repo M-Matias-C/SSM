@@ -31,17 +31,22 @@ router.get(
 router.post(
   "/",
   authMiddleware.protect,
-  authMiddleware.authorize("administrador", "farmacia"),
+  authMiddleware.authorize("administrador", "dono_farmacia"),
   productController.createProduct,
 );
 
 router.patch(
   "/:id",
   authMiddleware.protect,
-  authMiddleware.authorize("administrador", "farmacia"),
+  authMiddleware.authorize("administrador", "dono_farmacia"),
   [param("id").isMongoId().withMessage("ID de produto inválido")],
   validateRequest,
   productController.updateProduct,
+);
+
+router.post(
+  "/check-interactions",
+  productController.checkInteractions,
 );
 
 module.exports = router;

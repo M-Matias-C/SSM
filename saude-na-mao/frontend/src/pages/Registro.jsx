@@ -5,8 +5,9 @@ import { useForm } from '../hooks'
 import ValidationService from '../utils/validation'
 import Alert from '../components/Alert'
 import Logger from '../utils/logger'
-import { User, Mail, Phone, Lock, Eye, EyeOff, CheckCircle, XCircle, ArrowRight, Shield } from 'lucide-react'
-import { useState } from 'react'
+import { SELF_REGISTER_TYPES } from '../constants'
+import { User, Mail, Phone, Lock, Eye, EyeOff, CheckCircle, XCircle, ArrowRight, Shield, Truck, Store, ShoppingBag, FileText, MapPin } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
 
 const logger = new Logger('Registro')
 
@@ -43,6 +44,42 @@ export default function Registro() {
   const { setUser, setToken } = useAuthStore()
   const [apiError, setApiError] = useState(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [tipoUsuario, setTipoUsuario] = useState('cliente')
+  const googleBtnRef = useRef(null)
+
+  const handleGoogleRegister = async (response) => {
+    try {
+      setApiError(null)
+      const res = await authService.google(response.credential)
+      const { accessToken, user } = res.data.data
+      setToken(accessToken)
+      setUser(user)
+      navigate('/perfil')
+    } catch (err) {
+      setApiError(err.response?.data?.message || 'Erro ao registrar com Google')
+    }
+  }
+
+  useEffect(() => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+    if (!clientId) return
+    const script = document.createElement('script')
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.onload = () => {
+      window.google?.accounts?.id?.initialize({
+        client_id: clientId,
+        callback: handleGoogleRegister,
+      })
+      if (googleBtnRef.current) {
+        window.google?.accounts?.id?.renderButton(googleBtnRef.current, {
+          theme: 'outline', size: 'large', width: '100%', text: 'signup_with',
+        })
+      }
+    }
+    document.body.appendChild(script)
+    return () => { try { document.body.removeChild(script) } catch {} }
+  }, [])
 
   const validateField = (field, value) => {
     if (field === 'confirmaSenha') {
@@ -59,26 +96,67 @@ export default function Registro() {
       cpf: '',
       senha: '',
       confirmaSenha: '',
+      // Entregador
+      tipo_veiculo: '',
+      cnh: '',
+      // Dono farmácia
+      cnpj: '',
+      nome_farmacia: '',
+      logradouro: '',
+      numero: '',
+      bairro: '',
+      cidade: '',
+      estado: '',
+      cep: '',
     },
     async (formData) => {
       try {
         setApiError(null)
-        logger.info('Attempting registration', { email: formData.email })
+        logger.info('Attempting registration', { email: formData.email, tipo: tipoUsuario })
 
-        const response = await authService.register({
+        const payload = {
           nome: formData.nome,
           email: formData.email,
           telefone: formData.telefone,
           cpf: formData.cpf,
           senha: formData.senha,
-        })
+          tipo_usuario: tipoUsuario,
+          lgpd_consentimento: true,
+        }
+
+        if (tipoUsuario === 'entregador') {
+          payload.dados_entregador = {
+            tipo_veiculo: formData.tipo_veiculo,
+            cnh: formData.cnh,
+          }
+        }
+
+        if (tipoUsuario === 'dono_farmacia') {
+          payload.dados_farmacia = {
+            cnpj: formData.cnpj,
+            nome: formData.nome_farmacia,
+            logradouro: formData.logradouro,
+            numero: formData.numero,
+            bairro: formData.bairro,
+            cidade: formData.cidade,
+            estado: formData.estado,
+            cep: formData.cep,
+          }
+        }
+
+        const response = await authService.register(payload)
 
         const { accessToken, user } = response.data.data
         setToken(accessToken)
         setUser(user)
-        logger.info('Registration successful', { userId: user.id })
+        logger.info('Registration successful', { userId: user.id, role: user.role })
 
-        setTimeout(() => navigate('/perfil'), 1000)
+        const redirectMap = {
+          cliente: '/perfil',
+          entregador: '/perfil',
+          dono_farmacia: '/farmaceutico',
+        }
+        setTimeout(() => navigate(redirectMap[tipoUsuario] || '/perfil'), 1000)
       } catch (error) {
         const errorMessage = error.data?.message || error.message || 'Erro ao registrar'
         setApiError(errorMessage)
@@ -89,6 +167,8 @@ export default function Registro() {
   )
 
   const passwordValidation = ValidationService.validatePassword(values.senha)
+
+  const typeIcons = { cliente: ShoppingBag, entregador: Truck, dono_farmacia: Store }
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex">
@@ -150,6 +230,33 @@ export default function Registro() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            {/* Seletor de tipo de conta */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Conta</label>
+              <div className="grid grid-cols-3 gap-2">
+                {SELF_REGISTER_TYPES.map(({ value, label, description }) => {
+                  const Icon = typeIcons[value]
+                  const isSelected = tipoUsuario === value
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setTipoUsuario(value)}
+                      className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center ${
+                        isSelected
+                          ? 'border-primary bg-primary/5 text-primary'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="text-xs font-semibold">{label}</span>
+                      <span className="text-[10px] leading-tight opacity-70">{description}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
             <div>
               <label htmlFor="nome" className="block text-sm font-medium text-gray-700 mb-1">
                 Nome Completo
@@ -337,6 +444,137 @@ export default function Registro() {
               )}
             </div>
 
+            {/* Campos condicionais: Entregador */}
+            {tipoUsuario === 'entregador' && (
+              <div className="space-y-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                <p className="text-sm font-semibold text-blue-800 flex items-center gap-2">
+                  <Truck className="w-4 h-4" /> Dados do Entregador
+                </p>
+                <div>
+                  <label htmlFor="tipo_veiculo" className="block text-sm font-medium text-gray-700 mb-1">
+                    Tipo de Veículo
+                  </label>
+                  <select
+                    id="tipo_veiculo"
+                    name="tipo_veiculo"
+                    value={values.tipo_veiculo}
+                    onChange={handleChange}
+                    className="input-field"
+                    disabled={isSubmitting}
+                  >
+                    <option value="">Selecione...</option>
+                    <option value="moto">Moto</option>
+                    <option value="bicicleta">Bicicleta</option>
+                    <option value="carro">Carro</option>
+                    <option value="a_pe">A pé</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="cnh" className="block text-sm font-medium text-gray-700 mb-1">
+                    CNH
+                  </label>
+                  <div className="relative">
+                    <FileText className="absolute left-3 top-3 w-5 h-5 text-gray-400 pointer-events-none" />
+                    <input
+                      id="cnh"
+                      type="text"
+                      name="cnh"
+                      value={values.cnh}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      placeholder="Número da CNH"
+                      className="input-field pl-11"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Campos condicionais: Dono de Farmácia */}
+            {tipoUsuario === 'dono_farmacia' && (
+              <div className="space-y-4 p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                <p className="text-sm font-semibold text-emerald-800 flex items-center gap-2">
+                  <Store className="w-4 h-4" /> Dados da Farmácia
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label htmlFor="nome_farmacia" className="block text-sm font-medium text-gray-700 mb-1">
+                      Nome da Farmácia
+                    </label>
+                    <input
+                      id="nome_farmacia"
+                      type="text"
+                      name="nome_farmacia"
+                      value={values.nome_farmacia}
+                      onChange={handleChange}
+                      placeholder="Nome da farmácia"
+                      className="input-field"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label htmlFor="cnpj" className="block text-sm font-medium text-gray-700 mb-1">
+                      CNPJ
+                    </label>
+                    <input
+                      id="cnpj"
+                      type="text"
+                      name="cnpj"
+                      value={values.cnpj}
+                      onChange={handleChange}
+                      placeholder="00.000.000/0000-00"
+                      className="input-field"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label htmlFor="logradouro" className="block text-sm font-medium text-gray-700 mb-1">
+                      Endereço
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400 pointer-events-none" />
+                      <input
+                        id="logradouro"
+                        type="text"
+                        name="logradouro"
+                        value={values.logradouro}
+                        onChange={handleChange}
+                        placeholder="Logradouro"
+                        className="input-field pl-11"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="numero" className="block text-sm font-medium text-gray-700 mb-1">Número</label>
+                    <input id="numero" type="text" name="numero" value={values.numero} onChange={handleChange} placeholder="Nº" className="input-field" disabled={isSubmitting} />
+                  </div>
+                  <div>
+                    <label htmlFor="bairro" className="block text-sm font-medium text-gray-700 mb-1">Bairro</label>
+                    <input id="bairro" type="text" name="bairro" value={values.bairro} onChange={handleChange} placeholder="Bairro" className="input-field" disabled={isSubmitting} />
+                  </div>
+                  <div>
+                    <label htmlFor="cidade" className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+                    <input id="cidade" type="text" name="cidade" value={values.cidade} onChange={handleChange} placeholder="Cidade" className="input-field" disabled={isSubmitting} />
+                  </div>
+                  <div>
+                    <label htmlFor="estado" className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                    <select id="estado" name="estado" value={values.estado} onChange={handleChange} className="input-field" disabled={isSubmitting}>
+                      <option value="">UF</option>
+                      {['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'].map(uf => (
+                        <option key={uf} value={uf}>{uf}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <label htmlFor="cep" className="block text-sm font-medium text-gray-700 mb-1">CEP</label>
+                    <input id="cep" type="text" name="cep" value={values.cep} onChange={handleChange} placeholder="00000-000" className="input-field" disabled={isSubmitting} />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-start gap-2.5 mt-2">
               <input
                 type="checkbox"
@@ -376,6 +614,12 @@ export default function Registro() {
           </form>
 
           <div className="mt-8 pt-6 border-t border-gray-100">
+            {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+              <div className="mb-4">
+                <p className="text-center text-gray-400 text-xs mb-3">ou registre-se com</p>
+                <div ref={googleBtnRef} className="flex justify-center" />
+              </div>
+            )}
             <p className="text-center text-gray-500 text-sm">
               Já tem conta?{' '}
               <Link to="/login" className="text-primary font-semibold hover:text-secondary transition">

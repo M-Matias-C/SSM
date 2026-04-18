@@ -1,18 +1,25 @@
-import { Link, Navigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { ShoppingCart, MapPin, Clock, Shield, Zap, ArrowRight, Star, Truck, CreditCard, Headphones, Tag, ChevronRight, Search, Percent } from 'lucide-react'
-import { pharmacyService } from '../services/api'
+import { pharmacyService, productService } from '../services/api'
 import api from '../services/api'
 import { useAuthStore } from '../stores/store'
+import ProductCard from '../components/ProductCard'
+import { PharmacyCardSkeleton, ProductCardSkeleton } from '../components/Skeleton'
 
 export default function Home() {
+  const navigate = useNavigate()
   const { user, isAuthenticated } = useAuthStore()
   const [pharmacies, setPharmacies] = useState([])
   const [coupons, setCoupons] = useState([])
+  const [featuredProducts, setFeaturedProducts] = useState([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [loadingPharmacies, setLoadingPharmacies] = useState(true)
+  const [loadingProducts, setLoadingProducts] = useState(true)
 
-  if (isAuthenticated() && user?.role === 'farmacia') {
-    return <Navigate to="/farmaceutico" replace />
-  }
+  const authenticated = isAuthenticated()
+  const isPharmacyRole = authenticated && ['dono_farmacia', 'farmaceutico'].includes(user?.role)
+  const isDriver = authenticated && user?.role === 'entregador'
 
   useEffect(() => {
     pharmacyService.getAll()
@@ -22,13 +29,31 @@ export default function Home() {
         setPharmacies(data.slice(0, 6))
       })
       .catch(() => {})
+      .finally(() => setLoadingPharmacies(false))
 
     api.get('/cupons/ativos')
       .then((res) => {
         setCoupons(res.data?.data?.cupons || [])
       })
       .catch(() => {})
+
+    productService.getFeatured()
+      .then((res) => {
+        const payload = res.data?.data
+        const data = Array.isArray(payload) ? payload : payload?.produtos ?? payload?.docs ?? []
+        setFeaturedProducts(data.slice(0, 8))
+      })
+      .catch(() => {})
+      .finally(() => setLoadingProducts(false))
   }, [])
+
+  if (isPharmacyRole) {
+    return <Navigate to="/farmaceutico" replace />
+  }
+
+  if (isDriver) {
+    return <Navigate to="/entregas" replace />
+  }
 
   return (
     <div>
@@ -66,6 +91,28 @@ export default function Home() {
                   Fale Conosco
                 </Link>
               </div>
+
+              <form
+                onSubmit={(e) => { e.preventDefault(); if (searchQuery.trim()) navigate(`/produtos?search=${encodeURIComponent(searchQuery.trim())}`) }}
+                className="mt-8 max-w-lg"
+              >
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar medicamentos, vitaminas..."
+                    className="w-full pl-12 pr-28 py-3.5 rounded-xl text-gray-900 bg-white/95 backdrop-blur-sm shadow-lg focus:outline-none focus:ring-2 focus:ring-white/50 text-sm"
+                  />
+                  <button
+                    type="submit"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-secondary transition"
+                  >
+                    Buscar
+                  </button>
+                </div>
+              </form>
             </div>
             <div className="hidden lg:flex items-center justify-center animate-fade-in">
               <div className="relative">
@@ -136,7 +183,7 @@ export default function Home() {
         </section>
       )}
 
-      {pharmacies.length > 0 && (
+      {(pharmacies.length > 0 || loadingPharmacies) && (
         <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <div className="flex items-center justify-between mb-8">
@@ -149,7 +196,9 @@ export default function Home() {
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {pharmacies.map((pharmacy) => {
+              {loadingPharmacies
+                ? Array.from({ length: 6 }).map((_, i) => <PharmacyCardSkeleton key={i} />)
+                : pharmacies.map((pharmacy) => {
                 const initial = pharmacy.nome?.charAt(0) || 'F'
                 const colors = ['from-blue-500 to-blue-600', 'from-emerald-500 to-emerald-600', 'from-violet-500 to-violet-600', 'from-orange-500 to-orange-600', 'from-pink-500 to-pink-600', 'from-cyan-500 to-cyan-600']
                 const colorIdx = pharmacy.nome?.length % colors.length || 0
@@ -178,6 +227,30 @@ export default function Home() {
                   </Link>
                 )
               })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {(featuredProducts.length > 0 || loadingProducts) && (
+        <section className="py-16 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <span className="text-primary font-semibold text-sm uppercase tracking-wider">Destaque</span>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">Produtos em Destaque</h2>
+              </div>
+              <Link to="/produtos" className="text-primary font-semibold text-sm flex items-center gap-1 hover:gap-2 transition-all">
+                Ver todos <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {loadingProducts
+                ? Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)
+                : featuredProducts.map((product) => (
+                    <ProductCard key={product._id || product.id} product={product} />
+                  ))
+              }
             </div>
           </div>
         </section>

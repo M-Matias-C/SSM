@@ -33,7 +33,7 @@ const UserSchema = new mongoose.Schema({
   },
   tipo_usuario: {
     type: String,
-    enum: ["cliente", "administrador", "farmacia"],
+    enum: ["cliente", "entregador", "dono_farmacia", "farmaceutico", "administrador"],
     default: "cliente",
   },
   data_cadastro: {
@@ -68,6 +68,65 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  foto_perfil: {
+    type: String,
+    default: null,
+  },
+  google_id: {
+    type: String,
+    default: null,
+    sparse: true,
+  },
+  lgpd_consentimento: {
+    aceito: { type: Boolean, default: false },
+    data_aceite: { type: Date },
+    ip_aceite: { type: String },
+    versao_termo: { type: String, default: "1.0" },
+  },
+  dados_entregador: {
+    tipo_veiculo: {
+      type: String,
+      enum: ["moto", "bicicleta", "carro"],
+    },
+    placa: { type: String, trim: true },
+    cnh: { type: String, trim: true },
+    disponivel: { type: Boolean, default: false },
+    localizacao_atual: {
+      type: { type: String, enum: ["Point"] },
+      coordinates: { type: [Number] },
+    },
+    entregas_realizadas: { type: Number, default: 0 },
+    avaliacao: { type: Number, default: 0, min: 0, max: 5 },
+    total_avaliacoes: { type: Number, default: 0 },
+  },
+  dados_dono_farmacia: {
+    id_farmacia: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Pharmacy",
+    },
+  },
+  dados_farmaceutico: {
+    id_farmacia: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Pharmacy",
+    },
+    crf: { type: String, trim: true },
+    crf_verificado: { type: Boolean, default: false },
+    especialidades: [{
+      type: String,
+      enum: [
+        "farmacologia_clinica",
+        "farmacovigilancia",
+        "farmacoeconomia",
+        "analises_clinicas",
+        "cosmetologia",
+        "nutricao",
+        "homeopatia",
+        "fitoterapia",
+        "outras",
+      ],
+    }],
+  },
 });
 
 UserSchema.virtual("isLocked").get(function () {
@@ -97,6 +156,11 @@ UserSchema.pre("save", async function () {
 UserSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.senha);
 };
+
+UserSchema.index(
+  { "dados_entregador.localizacao_atual": "2dsphere" },
+  { partialFilterExpression: { tipo_usuario: "entregador", "dados_entregador.localizacao_atual.coordinates": { $exists: true } } }
+);
 
 if (mongoosePaginate) {
   UserSchema.plugin(mongoosePaginate);

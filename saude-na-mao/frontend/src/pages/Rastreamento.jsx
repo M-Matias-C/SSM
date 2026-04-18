@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/store'
 import { orderService } from '../services/api'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Alert from '../components/Alert'
-import { Package, MapPin, Truck, CheckCircle, Clock } from 'lucide-react'
+import { Package, MapPin, Truck, CheckCircle, Clock, XCircle, CreditCard } from 'lucide-react'
+import { io } from 'socket.io-client'
+
+const DeliveryMap = lazy(() => import('../components/DeliveryMap'))
 
 export default function Rastreamento() {
   const { id } = useParams()
@@ -13,6 +16,9 @@ export default function Rastreamento() {
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [driverLocation, setDriverLocation] = useState(null)
+  const [qrCode, setQrCode] = useState(null)
+  const [qrLoading, setQrLoading] = useState(false)
 
   useEffect(() => {
     if (!token) {
@@ -21,6 +27,25 @@ export default function Rastreamento() {
     }
     loadOrder()
   }, [id, token, navigate])
+
+  // Real-time socket for driver location
+  useEffect(() => {
+    if (!order || !['a_caminho', 'em_processamento'].includes(order.status)) return
+    
+    const socket = io(window.location.origin.replace(':3000', ':5000'), {
+      transports: ['websocket'],
+    })
+    socket.emit('join:order', id)
+    socket.on('delivery:location', (data) => {
+      if (data.latitude && data.longitude) {
+        setDriverLocation([data.latitude, data.longitude])
+      }
+    })
+    socket.on('order:status:updated', (data) => {
+      setOrder(prev => prev ? { ...prev, status: data.status } : prev)
+    })
+    return () => socket.disconnect()
+  }, [order?.status, id])
 
   const loadOrder = async () => {
     try {
@@ -94,6 +119,36 @@ export default function Rastreamento() {
 
         <div className="mb-12">
           <h2 className="text-2xl font-bold mb-8">Status da Entrega</h2>
+
+          {order.status === 'cancelado' && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-6 flex items-center gap-4">
+              <XCircle className="w-10 h-10 text-red-500 flex-shrink-0" />
+              <div>
+                <h3 className="font-bold text-red-800 text-lg">Pedido Cancelado</h3>
+                <p className="text-sm text-red-600">Este pedido foi cancelado e não será entregue.</p>
+              </div>
+            </div>
+          )}
+
+          {order.status === 'aguardando_pagamento' && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-6 flex items-center gap-4">
+              <CreditCard className="w-10 h-10 text-yellow-500 flex-shrink-0" />
+              <div>
+                <h3 className="font-bold text-yellow-800 text-lg">Aguardando Pagamento</h3>
+                <p className="text-sm text-yellow-600">O pedido será processado assim que o pagamento for confirmado.</p>
+              </div>
+            </div>
+          )}
+
+          {order.status === 'em_processamento' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6 flex items-center gap-4">
+              <Clock className="w-10 h-10 text-blue-500 flex-shrink-0 animate-pulse" />
+              <div>
+                <h3 className="font-bold text-blue-800 text-lg">Em Processamento</h3>
+                <p className="text-sm text-blue-600">A farmácia está preparando seu pedido.</p>
+              </div>
+            </div>
+          )}
           
           <div className="space-y-6 max-w-2xl">
             <div className="flex gap-4">
@@ -186,6 +241,44 @@ export default function Rastreamento() {
           </div>
         </div>
 
+        {/* Mapa de rastreamento em tempo real */}
+        {order.status !== 'cancelado' && order.status !== 'entregue' && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-primary" />
+              Rastreamento em Tempo Real
+            </h2>
+            <Suspense fallback={
+              <div className="h-[350px] bg-gray-100 rounded-xl animate-pulse flex items-center justify-center">
+                <p className="text-gray-400">Carregando mapa...</p>
+              </div>
+            }>
+              <DeliveryMap
+                driverLocation={driverLocation || (order.entregador?.localizacao_atual?.coordinates
+                  ? [order.entregador.localizacao_atual.coordinates[1], order.entregador.localizacao_atual.coordinates[0]]
+                  : null)}
+                pharmacyLocation={order.farmacia?.location?.coordinates
+                  ? [order.farmacia.location.coordinates[1], order.farmacia.location.coordinates[0]]
+                  : null}
+                destinationLocation={order.endereco_entrega?.coordenadas
+                  ? [order.endereco_entrega.coordenadas.lat, order.endereco_entrega.coordenadas.lng]
+                  : null}
+                pharmacyName={order.farmacia?.nome || order.nome_farmacia}
+                destinationAddress={order.endereco_entrega?.logradouro
+                  ? `${order.endereco_entrega.logradouro}, ${order.endereco_entrega.numero}`
+                  : undefined}
+                status={order.status}
+                className="h-[350px]"
+              />
+            </Suspense>
+            {!driverLocation && order.status === 'a_caminho' && (
+              <p className="text-xs text-gray-400 mt-2 text-center">
+                Aguardando localização do entregador...
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="bg-blue-50 rounded-lg p-6 mb-8">
           <h3 className="font-bold mb-4 flex items-center gap-2">
             <MapPin className="w-5 h-5" /> Endereço de Entrega
@@ -204,6 +297,37 @@ export default function Rastreamento() {
             <p className="text-gray-700">{order.endereco_entrega || 'Retirada na farmácia'}</p>
           )}
         </div>
+
+        {/* QR Code para confirmação de entrega */}
+        {order.status === 'a_caminho' && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 mb-8 text-center">
+            <h3 className="font-bold text-emerald-800 mb-2 flex items-center justify-center gap-2">
+              📱 QR Code de Confirmação
+            </h3>
+            <p className="text-sm text-emerald-600 mb-4">
+              Mostre este QR Code ao entregador para confirmar o recebimento
+            </p>
+            {qrCode ? (
+              <div className="inline-block bg-white p-4 rounded-xl shadow-sm">
+                <img src={qrCode} alt="QR Code de entrega" className="w-48 h-48 mx-auto" />
+              </div>
+            ) : (
+              <button
+                onClick={async () => {
+                  try {
+                    setQrLoading(true)
+                    const res = await orderService.generateQR(id)
+                    setQrCode(res.data?.data?.qrDataUrl)
+                  } catch { /* ignore */ } finally { setQrLoading(false) }
+                }}
+                disabled={qrLoading}
+                className="px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition disabled:opacity-50"
+              >
+                {qrLoading ? 'Gerando...' : 'Gerar QR Code'}
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="mb-8">
           <h3 className="font-bold text-lg mb-4">Itens do Pedido</h3>

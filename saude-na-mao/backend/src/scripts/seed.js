@@ -119,6 +119,7 @@ const produtosBase = [
     descricao: "Indicado para dores leves a moderadas e febre.",
     receita_obrigatoria: false,
     controlado: false,
+    classificacao_receita: "sem_receita",
     precos: [7.90, 8.50, 6.99, 7.20, 8.90, 5.99],
   },
   {
@@ -130,6 +131,7 @@ const produtosBase = [
     descricao: "Anti-inflamatório, analgésico e antitérmico.",
     receita_obrigatoria: false,
     controlado: false,
+    classificacao_receita: "sem_receita",
     precos: [14.50, 12.90, 15.80, 11.90, 13.50, 10.90],
   },
   {
@@ -141,6 +143,7 @@ const produtosBase = [
     descricao: "Analgésico e antitérmico de uso oral.",
     receita_obrigatoria: false,
     controlado: false,
+    classificacao_receita: "sem_receita",
     precos: [9.90, 8.50, 10.50, 7.90, 9.20, 6.90],
   },
   {
@@ -152,6 +155,7 @@ const produtosBase = [
     descricao: "Antibiótico de amplo espectro para infecções bacterianas.",
     receita_obrigatoria: true,
     controlado: false,
+    classificacao_receita: "antimicrobiano",
     precos: [22.80, 24.90, 19.90, 21.50, 23.40, 18.90],
   },
   {
@@ -163,6 +167,7 @@ const produtosBase = [
     descricao: "Anti-histamínico para rinite alérgica e urticária.",
     receita_obrigatoria: false,
     controlado: false,
+    classificacao_receita: "sem_receita",
     precos: [12.40, 14.90, 11.50, 13.20, 10.90, 9.90],
   },
   {
@@ -174,6 +179,7 @@ const produtosBase = [
     descricao: "Suplemento de vitamina C efervescente.",
     receita_obrigatoria: false,
     controlado: false,
+    classificacao_receita: "sem_receita",
     precos: [18.90, 21.50, 16.90, 19.90, 17.50, 15.90],
   },
   {
@@ -185,6 +191,7 @@ const produtosBase = [
     descricao: "Suplemento de vitamina D3 em cápsulas.",
     receita_obrigatoria: false,
     controlado: false,
+    classificacao_receita: "sem_receita",
     precos: [34.90, 32.50, 36.90, 29.90, 33.80, 28.90],
   },
   {
@@ -196,6 +203,7 @@ const produtosBase = [
     descricao: "Suplemento com vitaminas B1, B2, B3, B5, B6, B7, B9 e B12.",
     receita_obrigatoria: false,
     controlado: false,
+    classificacao_receita: "sem_receita",
     precos: [21.50, 19.90, 23.80, 18.50, 22.40, 17.90],
   },
   {
@@ -207,6 +215,7 @@ const produtosBase = [
     descricao: "Inibidor de bomba de prótons para gastrite e úlcera.",
     receita_obrigatoria: false,
     controlado: false,
+    classificacao_receita: "sem_receita",
     precos: [16.80, 18.90, 14.50, 17.20, 15.90, 13.50],
   },
   {
@@ -218,6 +227,7 @@ const produtosBase = [
     descricao: "Hipoglicemiante oral para diabetes tipo 2.",
     receita_obrigatoria: true,
     controlado: false,
+    classificacao_receita: "tarja_vermelha",
     precos: [11.20, 13.50, 10.80, 12.90, 11.90, 9.90],
   },
   {
@@ -229,6 +239,7 @@ const produtosBase = [
     descricao: "Betabloqueador para hipertensão e angina.",
     receita_obrigatoria: true,
     controlado: false,
+    classificacao_receita: "tarja_vermelha",
     precos: [8.50, 9.90, 7.80, 10.50, 8.20, 7.50],
   },
   {
@@ -240,6 +251,7 @@ const produtosBase = [
     descricao: "Benzodiazepínico indicado para ansiedade e epilepsia.",
     receita_obrigatoria: true,
     controlado: true,
+    classificacao_receita: "tarja_preta",
     precos: [28.60, 31.90, 26.50, null, 29.90, 25.80],
   },
   {
@@ -251,6 +263,7 @@ const produtosBase = [
     descricao: "Indicado para TDAH e narcolepsia.",
     receita_obrigatoria: true,
     controlado: true,
+    classificacao_receita: "controlado_a",
     precos: [89.90, null, 84.50, null, 92.30, 79.90],
   },
   {
@@ -262,6 +275,7 @@ const produtosBase = [
     descricao: "Benzodiazepínico de curta duração para ansiedade.",
     receita_obrigatoria: true,
     controlado: true,
+    classificacao_receita: "tarja_preta",
     precos: [43.20, 45.90, null, 40.50, 44.80, 38.90],
   },
   {
@@ -273,6 +287,7 @@ const produtosBase = [
     descricao: "Redutor de colesterol LDL.",
     receita_obrigatoria: true,
     controlado: false,
+    classificacao_receita: "tarja_vermelha",
     precos: [13.90, 15.50, 12.80, 14.20, 13.50, 11.90],
   },
   {
@@ -284,6 +299,7 @@ const produtosBase = [
     descricao: "Antagonista dos receptores de angiotensina II.",
     receita_obrigatoria: true,
     controlado: false,
+    classificacao_receita: "tarja_vermelha",
     precos: [15.80, 17.90, 14.50, 16.20, 15.20, 13.50],
   },
   {
@@ -295,6 +311,7 @@ const produtosBase = [
     descricao: "Analgésico e relaxante muscular.",
     receita_obrigatoria: false,
     controlado: false,
+    classificacao_receita: "sem_receita",
     precos: [11.90, 13.50, 10.50, 12.80, 11.20, 9.90],
   },
   {
@@ -306,6 +323,7 @@ const produtosBase = [
     descricao: "Para cólicas e dores abdominais.",
     receita_obrigatoria: false,
     controlado: false,
+    classificacao_receita: "sem_receita",
     precos: [19.90, 22.50, 17.80, 20.90, 18.50, 16.90],
   },
   {
@@ -317,6 +335,7 @@ const produtosBase = [
     descricao: "Anti-histamínico de segunda geração para alergias.",
     receita_obrigatoria: false,
     controlado: false,
+    classificacao_receita: "sem_receita",
     precos: [32.90, 35.50, 29.90, 34.80, 31.50, 28.90],
   },
   {
@@ -328,6 +347,7 @@ const produtosBase = [
     descricao: "Para dores de cabeça e enxaqueca.",
     receita_obrigatoria: false,
     controlado: false,
+    classificacao_receita: "sem_receita",
     precos: [14.90, 16.50, 13.20, 15.80, 14.20, 12.50],
   },
 ];

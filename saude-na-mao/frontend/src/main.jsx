@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { validateEnv } from './config/env'
 import Logger from './utils/logger'
+import AccessibilityProvider from './components/AccessibilityProvider'
 import App from './App'
 import './index.css'
 
@@ -18,6 +19,8 @@ try {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    <AccessibilityProvider>
+      <App />
+    </AccessibilityProvider>
   </React.StrictMode>,
 )

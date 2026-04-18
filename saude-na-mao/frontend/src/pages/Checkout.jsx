@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useCartStore, useAuthStore } from '../stores/store'
-import { orderService } from '../services/api'
+import { orderService, geoService } from '../services/api'
 import {
   CreditCard,
   Banknote,
@@ -75,6 +75,7 @@ export default function Checkout() {
   const [orderCreated, setOrderCreated] = useState(null)
   const orderDoneRef = useRef(false)
   const [error, setError] = useState(null)
+  const [cepLoading, setCepLoading] = useState(false)
 
   useEffect(() => {
     if (!token) {
@@ -85,6 +86,26 @@ export default function Checkout() {
       navigate('/carrinho')
     }
   }, [token, items, navigate, orderCreated])
+
+  const handleCepBlur = async () => {
+    const cep = address.cep?.replace(/\D/g, '')
+    if (cep?.length !== 8) return
+    try {
+      setCepLoading(true)
+      const res = await geoService.geocodeCep(cep)
+      const data = res.data?.data
+      if (data) {
+        setAddress(prev => ({
+          ...prev,
+          logradouro: data.logradouro || prev.logradouro,
+          bairro: data.bairro || prev.bairro,
+          cidade: data.cidade || data.localidade || prev.cidade,
+          estado: data.estado || data.uf || prev.estado,
+        }))
+      }
+    } catch { /* ignore */ }
+    finally { setCepLoading(false) }
+  }
 
   const cartState = JSON.parse(localStorage.getItem('checkout_data') || '{}')
   const subtotal = cartState.subtotal || getTotal()
@@ -280,9 +301,11 @@ export default function Checkout() {
                     type="text"
                     value={address.cep}
                     onChange={(e) => setAddress({ ...address, cep: e.target.value })}
+                    onBlur={handleCepBlur}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     placeholder="74000-000"
                   />
+                  {cepLoading && <span className="text-xs text-gray-400 mt-1">Buscando CEP...</span>}
                 </div>
               </div>
             </div>

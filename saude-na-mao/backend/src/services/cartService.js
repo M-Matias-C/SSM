@@ -9,11 +9,13 @@ const {
   calculateFreight,
   getDeliveryOptions: getFreightOptions,
 } = require("./freightService");
+const { verificarInteracoes } = require("../utils/drugInteractions");
+const crypto = require("crypto");
 
 const CART_POPULATE = [
   {
     path: "itens.id_produto",
-    select: "nome preco estoque controlado receita_obrigatoria",
+    select: "nome preco estoque controlado receita_obrigatoria classificacao_receita principio_ativo",
   },
   {
     path: "itens.id_farmacia",
@@ -164,6 +166,10 @@ async function getPrescriptionOrThrow(receitaId, userId) {
     throw createError("A receita precisa estar aprovada", 400);
   }
 
+  if (prescription.consumida) {
+    throw createError("Esta receita já foi utilizada em outro pedido", 400);
+  }
+
   if (prescription.validade && prescription.validade < new Date()) {
     throw createError("Receita expirada", 400);
   }
@@ -300,6 +306,14 @@ async function addItem(userId, { productId, quantidade = 1, receitaId }) {
 
   const product = await getProductOrThrow(productId);
 
+  // ANVISA: controlado_a (tarja amarela) NÃO pode venda online
+  if (product.classificacao_receita === "controlado_a") {
+    throw createError(
+      "Medicamentos controlados de tarja amarela (lista A) não podem ser vendidos online conforme legislação ANVISA.",
+      403,
+    );
+  }
+
   if (product.estoque < quantityToAdd) {
     throw createError("Estoque insuficiente", 400);
   }
@@ -375,7 +389,22 @@ async function addItem(userId, { productId, quantidade = 1, receitaId }) {
   cart.recalcularTotais();
   cart.renovarExpiracao();
 
-  return saveAndPopulateCart(cart);
+  const populatedCart = await saveAndPopulateCart(cart);
+
+  // Check drug interactions after adding item
+  const principiosAtivos = [];
+  for (const item of cart.itens) {
+    const prod = await Product.findById(item.id_produto?._id || item.id_produto).select("principio_ativo");
+    if (prod?.principio_ativo) {
+      principiosAtivos.push(prod.principio_ativo);
+    }
+  }
+  const interacoes = verificarInteracoes(principiosAtivos);
+  if (interacoes.length > 0) {
+    populatedCart._doc.alertas_interacao = interacoes;
+  }
+
+  return populatedCart;
 }
 
 async function removeItem(userId, productId) {
@@ -586,6 +615,11 @@ async function checkout(userId) {
       )
     : null;
 
+  // Generate NF number (simulated)
+  const nfTimestamp = Date.now().toString(36).toUpperCase();
+  const nfRandom = crypto.randomInt(1000, 9999);
+  const numero_nf = `NF-${nfTimestamp}-${nfRandom}`;
+
   const order = new Order({
     id_usuario: userId,
     id_farmacia: cart.id_farmacia,
@@ -595,6 +629,7 @@ async function checkout(userId) {
     subtotal: cart.subtotal,
     taxa_entrega: cart.taxa_entrega,
     total: cart.total,
+    numero_nf,
     status: "aguardando_pagamento",
     historico_status: [
       {
@@ -605,6 +640,23 @@ async function checkout(userId) {
   });
 
   await order.save();
+
+  // Mark prescriptions as consumed (ANVISA compliance)
+  const prescriptionIds = refreshedItems
+    .map((item) => item.id_receita)
+    .filter(Boolean);
+
+  if (prescriptionIds.length > 0) {
+    await Prescription.updateMany(
+      { _id: { $in: prescriptionIds } },
+      {
+        $set: {
+          consumida: true,
+          id_pedido_vinculado: order._id,
+        },
+      },
+    );
+  }
 
   cart.ativo = false;
   await cart.save();

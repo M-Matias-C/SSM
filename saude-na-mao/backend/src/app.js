@@ -20,12 +20,13 @@ const supportRoutes = require("./routes/supportRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const couponRoutes = require("./routes/couponRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
+const deliveryRoutes = require("./routes/deliveryRoutes");
 const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
 
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || "*",
+  origin: process.env.FRONTEND_URL || "http://localhost:3000",
   credentials: true,
 };
 app.use(cors(corsOptions));
@@ -83,6 +84,9 @@ app.use("/api/v1/coupons", couponRoutes);
 
 app.use("/api/v1/reviews", reviewRoutes);
 app.use("/api/v1/avaliacoes", reviewRoutes);
+
+app.use("/api/v1/deliveries", deliveryRoutes);
+app.use("/api/v1/entregas", deliveryRoutes);
 
 app.use((req, res, next) => {
   res.status(404).json({ success: false, message: "Rota não encontrada" });

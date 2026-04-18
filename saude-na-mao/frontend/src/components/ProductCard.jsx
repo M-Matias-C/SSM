@@ -1,13 +1,16 @@
 import { ShoppingCart, Heart } from 'lucide-react'
-import { useCartStore } from '../stores/store'
+import { useCartStore, useFavoritesStore } from '../stores/store'
 import { useState } from 'react'
 
 export default function ProductCard({ product }) {
   const { addItem, replaceCartWithItem } = useCartStore()
+  const { toggleFavorite, isFavorite } = useFavoritesStore()
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
   const [showConflict, setShowConflict] = useState(false)
   const [conflictPharmacy, setConflictPharmacy] = useState('')
+
+  const favorite = isFavorite(product.id || product._id)
 
   const productData = { ...product, quantity }
 
@@ -39,6 +42,13 @@ export default function ProductCard({ product }) {
           alt={product.nome}
           className="h-32 w-32 object-contain"
         />
+        <button
+          onClick={() => toggleFavorite({ id: product.id || product._id, nome: product.nome, preco: product.preco, imagem_url: product.imagem, id_farmacia: product.id_farmacia })}
+          className="absolute top-2 left-2 p-1.5 rounded-full bg-white/80 hover:bg-white shadow-sm transition"
+          aria-label={favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+        >
+          <Heart className={`w-5 h-5 transition ${favorite ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
+        </button>
         {isControlled && (
           <span className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
             Controlado

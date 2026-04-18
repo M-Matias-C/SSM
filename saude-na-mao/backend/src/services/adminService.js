@@ -9,7 +9,7 @@ const SupportMessage = require("../models/SupportMessage");
 const AuditLog = require("../models/AuditLog");
 const { logManual } = require("../middlewares/auditMiddleware");
 
-const VALID_USER_TYPES = ["cliente", "farmacia", "administrador"];
+const VALID_USER_TYPES = ["cliente", "entregador", "dono_farmacia", "farmaceutico", "administrador"];
 
 function createError(message, statusCode) {
   const error = new Error(message);

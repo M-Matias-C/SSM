@@ -11,14 +11,14 @@ router.get("/unread", protect, supportController.getUnreadCount);
 router.get(
   "/admin/all",
   protect,
-  authorize("farmacia", "administrador"),
+  authorize("farmaceutico", "dono_farmacia", "administrador"),
   supportController.getAllTickets,
 );
 
 router.post(
   "/admin/:id/assign",
   protect,
-  authorize("farmacia", "administrador"),
+  authorize("farmaceutico", "dono_farmacia", "administrador"),
   supportController.assignTicket,
 );
 

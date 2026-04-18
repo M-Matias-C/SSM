@@ -21,14 +21,14 @@ router.post(
 router.get(
   "/admin/pending",
   authMiddleware.protect,
-  authMiddleware.authorize("farmacia", "administrador"),
+  authMiddleware.authorize("farmaceutico", "administrador"),
   prescriptionController.getPendingPrescriptions,
 );
 
 router.patch(
   "/admin/:id/validate",
   authMiddleware.protect,
-  authMiddleware.authorize("farmacia", "administrador"),
+  authMiddleware.authorize("farmaceutico", "administrador"),
   prescriptionController.validatePrescription,
   audit("PRESCRIPTION_VALIDATED", "Prescription"),
 );

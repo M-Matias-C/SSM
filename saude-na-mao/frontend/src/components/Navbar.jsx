@@ -1,6 +1,9 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { ShoppingCart, User, LogOut, Menu, X, Home, Package2, MessageSquare, FileText, Shield, Store, ClipboardList } from 'lucide-react'
-import { useAuthStore, useCartStore, useUiStore } from '../stores/store'
+import { ShoppingCart, User, LogOut, Menu, X, Home, Package2, MessageSquare, FileText, Shield, Store, ClipboardList, Truck, Heart } from 'lucide-react'
+import { useAuthStore, useCartStore, useUiStore, useFavoritesStore } from '../stores/store'
+import { PHARMACY_ROLES } from '../constants'
+import AccessibilityMenu from './AccessibilityMenu'
+import DarkModeToggle from './DarkModeToggle'
 import Logger from '../utils/logger'
 
 const logger = new Logger('Navbar')
@@ -14,7 +17,9 @@ export default function Navbar() {
 
   const cartCount = getItemCount()
   const isAuth = isAuthenticated()
-  const isPharmacist = isAuth && user?.role === 'farmacia'
+  const isPharmacyRole = isAuth && PHARMACY_ROLES.includes(user?.role)
+  const isDriver = isAuth && user?.role === 'entregador'
+  const isClient = isAuth && user?.role === 'cliente'
 
   const handleLogout = () => {
     try {
@@ -42,11 +47,12 @@ export default function Navbar() {
     }`
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100">
+    <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100" role="navigation" aria-label="Navegação principal">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[60] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">Pular para o conteúdo</a>
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex justify-between items-center h-16">
           <Link 
-            to={isPharmacist ? '/farmaceutico' : '/'} 
+            to={isPharmacyRole ? '/farmaceutico' : isDriver ? '/entregas' : '/'} 
             className="flex items-center gap-2.5 group"
             onClick={() => closeMobileMenu()}
           >
@@ -61,11 +67,23 @@ export default function Navbar() {
 
           {/* Desktop nav links */}
           <div className="hidden md:flex items-center gap-1">
-            {isPharmacist ? (
+            {isPharmacyRole ? (
               <>
                 <Link to="/farmaceutico" className={navLinkClass('/farmaceutico')}>
                   <ClipboardList className="w-4 h-4" />
                   Painel
+                </Link>
+              </>
+            ) : isDriver ? (
+              <>
+                <Link to="/entregas" className={navLinkClass('/entregas')}>
+                  <Truck className="w-4 h-4" />
+                  Entregas
+                </Link>
+                <span className="mx-2 text-gray-200">|</span>
+                <Link to="/suporte" className={navLinkClass('/suporte')}>
+                  <MessageSquare className="w-4 h-4" />
+                  Suporte
                 </Link>
               </>
             ) : (
@@ -95,10 +113,14 @@ export default function Navbar() {
 
           {/* Desktop right side */}
           <div className="hidden md:flex items-center gap-3">
-            {!isPharmacist && (
+            <AccessibilityMenu />
+            <DarkModeToggle />
+
+            {isClient && (
               <Link 
                 to="/carrinho"
                 className="relative p-2 text-gray-500 hover:text-primary hover:bg-primary/5 rounded-xl transition-all duration-200"
+                aria-label={`Carrinho${cartCount > 0 ? ` (${cartCount} ${cartCount === 1 ? 'item' : 'itens'})` : ''}`}
               >
                 <ShoppingCart className="w-5 h-5" />
                 {cartCount > 0 && (
@@ -109,11 +131,21 @@ export default function Navbar() {
               </Link>
             )}
 
+            {isClient && (
+              <Link
+                to="/favoritos"
+                className="relative p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200"
+                aria-label="Favoritos"
+              >
+                <Heart className={`w-5 h-5 ${useFavoritesStore.getState().items.length > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+              </Link>
+            )}
+
             <div className="h-8 w-px bg-gray-200" />
 
             {isAuth && user ? (
               <div className="flex items-center gap-2">
-                {isPharmacist ? (
+                {isPharmacyRole ? (
                   <Link
                     to="/perfil"
                     className="flex items-center gap-2 text-sm text-gray-700 hover:text-primary transition-colors px-3 py-2 rounded-xl hover:bg-primary/5"
@@ -122,6 +154,16 @@ export default function Navbar() {
                       <Shield className="w-4 h-4 text-emerald-600" />
                     </div>
                     <span className="font-medium">{user.nome?.split(' ')[0] || 'Farmacêutico'}</span>
+                  </Link>
+                ) : isDriver ? (
+                  <Link
+                    to="/perfil"
+                    className="flex items-center gap-2 text-sm text-gray-700 hover:text-primary transition-colors px-3 py-2 rounded-xl hover:bg-primary/5"
+                  >
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Truck className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <span className="font-medium">{user.nome?.split(' ')[0] || 'Entregador'}</span>
                   </Link>
                 ) : (
                   <>
@@ -137,10 +179,11 @@ export default function Navbar() {
                     {user.role === 'administrador' && (
                       <Link
                         to="/admin"
-                        className="p-2 text-gray-500 hover:text-primary hover:bg-primary/5 rounded-xl transition-all"
+                        className="flex items-center gap-1.5 px-3 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all text-sm font-medium"
                         title="Painel Admin"
                       >
                         <Shield className="w-4 h-4" />
+                        <span className="hidden lg:inline">Admin</span>
                       </Link>
                     )}
                   </>
@@ -174,11 +217,12 @@ export default function Navbar() {
 
           {/* Mobile right side */}
           <div className="flex md:hidden items-center gap-2">
-            {!isPharmacist && (
+            {isClient && (
               <Link 
                 to="/carrinho"
                 className="relative p-2 text-gray-600 hover:text-primary transition"
                 onClick={() => closeMobileMenu()}
+                aria-label={`Carrinho${cartCount > 0 ? ` (${cartCount} ${cartCount === 1 ? 'item' : 'itens'})` : ''}`}
               >
                 <ShoppingCart className="w-5 h-5" />
                 {cartCount > 0 && (
@@ -192,7 +236,9 @@ export default function Navbar() {
             <button
               onClick={toggleMobileMenu}
               className="p-2 text-gray-600 hover:text-primary hover:bg-gray-50 rounded-xl transition"
-              aria-label="Toggle menu"
+              aria-label={isMobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-menu"
             >
               {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -201,8 +247,8 @@ export default function Navbar() {
 
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-100 py-3 space-y-1 animate-slide-down">
-            {isPharmacist ? (
+          <div id="mobile-menu" className="md:hidden border-t border-gray-100 py-3 space-y-1 animate-slide-down" role="menu">
+            {isPharmacyRole ? (
               <>
                 <button
                   onClick={() => handleNavClick('/farmaceutico')}
@@ -211,6 +257,33 @@ export default function Navbar() {
                   }`}
                 >
                   <ClipboardList className="w-4 h-4" /> Painel Farmacêutico
+                </button>
+                <button
+                  onClick={() => handleNavClick('/perfil')}
+                  className={`flex items-center gap-3 w-full text-left px-4 py-2.5 rounded-xl text-sm transition ${
+                    isActive('/perfil') ? 'bg-primary/10 text-primary font-medium' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <User className="w-4 h-4" /> Meu Perfil
+                </button>
+              </>
+            ) : isDriver ? (
+              <>
+                <button
+                  onClick={() => handleNavClick('/entregas')}
+                  className={`flex items-center gap-3 w-full text-left px-4 py-2.5 rounded-xl text-sm transition ${
+                    isActive('/entregas') ? 'bg-primary/10 text-primary font-medium' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <Truck className="w-4 h-4" /> Minhas Entregas
+                </button>
+                <button
+                  onClick={() => handleNavClick('/suporte')}
+                  className={`flex items-center gap-3 w-full text-left px-4 py-2.5 rounded-xl text-sm transition ${
+                    isActive('/suporte') ? 'bg-primary/10 text-primary font-medium' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <MessageSquare className="w-4 h-4" /> Suporte
                 </button>
                 <button
                   onClick={() => handleNavClick('/perfil')}
@@ -262,7 +335,7 @@ export default function Navbar() {
 
             {isAuth && user ? (
               <>
-                {!isPharmacist && (
+                {isClient && (
                   <button
                     onClick={() => handleNavClick('/perfil')}
                     className="flex items-center gap-3 w-full text-left px-4 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition"

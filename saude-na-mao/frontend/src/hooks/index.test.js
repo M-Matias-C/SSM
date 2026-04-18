@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useForm, useDebounce, useLocalStorage, useOnline } from '../src/hooks/index'
+import { useForm, useDebounce, useLocalStorage, useOnline } from './index'
 
 describe('Custom Hooks', () => {
   describe('useForm', () => {

@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const PharmacistSchema = new mongoose.Schema(
   {
+    id_usuario: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      index: true,
+    },
     nome: {
       type: String,
       required: true,

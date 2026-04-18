@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
 const User = require("../models/User");
-const Address = require("../models/Adress");
+const Address = require("../models/Address");
 const Order = require("../models/Order");
+const Prescription = require("../models/Prescription");
 const { buscarCep } = require("../utils/viaCep");
 
 function createError(message, statusCode) {
@@ -142,6 +143,114 @@ async function getOrderHistory(userId, { page = 1, limit = 10 }) {
   return { pedidos, total, pagina, totalPaginas };
 }
 
+/**
+ * LGPD - Exporta todos os dados do usuário (Art. 18, V da LGPD)
+ */
+async function exportUserData(userId) {
+  const user = await User.findById(userId).select("-senha -refreshToken -resetPasswordToken -resetPasswordExpire");
+  if (!user) {
+    throw createError("Usuário não encontrado", 404);
+  }
+
+  const [enderecos, pedidos, receitas] = await Promise.all([
+    Address.find({ id_usuario: userId }),
+    Order.find({ id_usuario: userId }).populate("id_farmacia", "nome").sort({ createdAt: -1 }),
+    Prescription.find({ id_usuario: userId }).sort({ createdAt: -1 }),
+  ]);
+
+  return {
+    dados_pessoais: {
+      nome: user.nome,
+      email: user.email,
+      telefone: user.telefone,
+      cpf: user.cpf,
+      tipo_usuario: user.tipo_usuario,
+      data_cadastro: user.data_cadastro,
+      lgpd_consentimento: user.lgpd_consentimento,
+    },
+    enderecos: enderecos.map((e) => ({
+      logradouro: e.logradouro,
+      numero: e.numero,
+      complemento: e.complemento,
+      bairro: e.bairro,
+      cidade: e.cidade,
+      estado: e.estado,
+      cep: e.cep,
+    })),
+    pedidos: pedidos.map((p) => ({
+      id: p._id,
+      data: p.createdAt,
+      status: p.status,
+      total: p.total,
+      farmacia: p.id_farmacia?.nome,
+      itens: p.itens.map((i) => ({
+        nome: i.nome_produto,
+        quantidade: i.quantidade,
+        preco: i.preco_unitario,
+      })),
+      numero_nf: p.numero_nf,
+    })),
+    receitas: receitas.map((r) => ({
+      id: r._id,
+      data: r.createdAt,
+      status: r.status,
+      tipo_receita: r.tipo_receita,
+      consumida: r.consumida,
+      dados_ocr: r.dados_ocr ? {
+        nome_medico: r.dados_ocr.nome_medico,
+        crm: r.dados_ocr.crm,
+        data_emissao: r.dados_ocr.data_emissao,
+      } : null,
+    })),
+    exportado_em: new Date(),
+  };
+}
+
+/**
+ * LGPD - Solicita exclusão da conta (Art. 18, VI da LGPD)
+ * Anonimiza dados pessoais mas mantém registros de pedidos por obrigação fiscal.
+ */
+async function requestAccountDeletion(userId) {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw createError("Usuário não encontrado", 404);
+  }
+
+  const activeOrders = await Order.countDocuments({
+    id_usuario: userId,
+    status: { $in: ["aguardando_pagamento", "em_processamento", "a_caminho"] },
+  });
+
+  if (activeOrders > 0) {
+    throw createError(
+      "Não é possível excluir a conta com pedidos em andamento. Aguarde a conclusão dos pedidos.",
+      400,
+    );
+  }
+
+  // Anonimize personal data
+  user.nome = "Usuário Removido";
+  user.email = `deleted_${userId}@removed.local`;
+  user.telefone = null;
+  user.cpf = null;
+  user.foto_perfil = null;
+  user.ativo = false;
+  user.lgpd_consentimento = {
+    ...user.lgpd_consentimento?.toObject?.() || user.lgpd_consentimento || {},
+    conta_excluida_em: new Date(),
+  };
+
+  await user.save();
+
+  // Deactivate all addresses
+  await Address.updateMany(
+    { id_usuario: userId },
+    { $set: { ativo: false } },
+  );
+
+  return { message: "Conta excluída com sucesso. Dados pessoais foram anonimizados." };
+}
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -150,4 +259,6 @@ module.exports = {
   deleteAddress,
   setDefaultAddress,
   getOrderHistory,
+  exportUserData,
+  requestAccountDeletion,
 };

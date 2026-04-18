@@ -1,17 +1,48 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCartStore } from '../stores/store'
 import { useNavigate, Link } from 'react-router-dom'
-import { Trash2, ArrowRight, Tag, Truck, Store, X, CheckCircle } from 'lucide-react'
-import api from '../services/api'
+import { Trash2, ArrowRight, Tag, Truck, Store, X, CheckCircle, AlertTriangle } from 'lucide-react'
+import api, { interactionService } from '../services/api'
 
 export default function Carrinho() {
   const navigate = useNavigate()
-  const { items, removeItem, updateQuantity, getTotal, clearCart } = useCartStore()
+  const { items, removeItem, updateQuantity, getTotal, clearCart, addItem } = useCartStore()
   const [couponCode, setCouponCode] = useState('')
   const [couponData, setCouponData] = useState(null)
   const [couponError, setCouponError] = useState('')
   const [couponLoading, setCouponLoading] = useState(false)
   const [deliveryType, setDeliveryType] = useState('moto')
+  const [interactions, setInteractions] = useState([])
+
+  // Reorder: load items from localStorage if present
+  useEffect(() => {
+    const reorderRaw = localStorage.getItem('reorder_items')
+    if (reorderRaw) {
+      try {
+        const reorderItems = JSON.parse(reorderRaw)
+        if (Array.isArray(reorderItems) && reorderItems.length > 0) {
+          clearCart()
+          reorderItems.forEach((item) => addItem(item))
+        }
+      } catch { /* ignore */ }
+      localStorage.removeItem('reorder_items')
+    }
+  }, [])
+
+  // Check drug interactions when items change
+  useEffect(() => {
+    if (items.length < 2) {
+      setInteractions([])
+      return
+    }
+    const productIds = items.map((i) => i.id).filter(Boolean)
+    if (productIds.length < 2) return
+    interactionService.check({ product_ids: productIds })
+      .then((res) => {
+        setInteractions(res.data?.data?.interacoes || [])
+      })
+      .catch(() => setInteractions([]))
+  }, [items])
 
   const pharmacyName = items[0]?.nome_farmacia || 'Farmácia'
 
@@ -172,6 +203,45 @@ export default function Carrinho() {
               Limpar
             </button>
           </div>
+
+          {/* Drug Interaction Alert */}
+          {interactions.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-bold text-red-800 text-sm mb-2">
+                    Alerta de Interação Medicamentosa
+                  </h3>
+                  <div className="space-y-2">
+                    {interactions.map((inter, idx) => (
+                      <div key={idx} className="text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-block w-2 h-2 rounded-full ${
+                            inter.severidade === 'grave' ? 'bg-red-500' :
+                            inter.severidade === 'moderada' ? 'bg-orange-500' : 'bg-yellow-500'
+                          }`} />
+                          <span className="font-semibold text-red-800">
+                            {inter.medicamentos?.join(' + ')}
+                          </span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                            inter.severidade === 'grave' ? 'bg-red-200 text-red-800' :
+                            inter.severidade === 'moderada' ? 'bg-orange-200 text-orange-800' : 'bg-yellow-200 text-yellow-800'
+                          }`}>
+                            {inter.severidade?.toUpperCase()}
+                          </span>
+                        </div>
+                        <p className="text-red-700 ml-4 mt-0.5">{inter.descricao}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-red-600 mt-3 font-medium">
+                    Consulte seu médico ou farmacêutico antes de prosseguir.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <aside className="space-y-4">

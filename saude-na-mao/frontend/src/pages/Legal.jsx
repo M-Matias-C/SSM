@@ -196,63 +196,74 @@ export default function Legal() {
   const [activeTab, setActiveTab] = useState('termos')
   const [expandedFAQ, setExpandedFAQ] = useState(null)
 
+  const renderInline = (text) => {
+    const parts = text.split(/(\*\*[^*]+\*\*)/)
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} className="font-semibold text-gray-900">{part.slice(2, -2)}</strong>
+      }
+      return part
+    })
+  }
+
+  const renderMarkdown = (content) => {
+    const lines = content.split('\n')
+    const elements = []
+    let listItems = []
+
+    const flushList = () => {
+      if (listItems.length > 0) {
+        elements.push(
+          <ul key={`ul-${elements.length}`} className="list-disc pl-5 space-y-1 text-sm leading-relaxed">
+            {listItems.map((item, i) => (
+              <li key={i}>{renderInline(item)}</li>
+            ))}
+          </ul>
+        )
+        listItems = []
+      }
+    }
+
+    lines.forEach((line, index) => {
+      if (line.startsWith('#')) {
+        flushList()
+        const level = line.match(/^#+/)[0].length
+        const text = line.replace(/^#+\s/, '')
+        elements.push(
+          level === 1 ? (
+            <h1 key={index} className="text-3xl font-bold text-gray-900 mt-6 mb-4">{renderInline(text)}</h1>
+          ) : (
+            <h2 key={index} className="text-xl font-bold text-gray-800 mt-4 mb-2">{renderInline(text)}</h2>
+          )
+        )
+      } else if (line.trimStart().startsWith('- ')) {
+        listItems.push(line.replace(/^\s*-\s/, ''))
+      } else if (line.trim()) {
+        flushList()
+        elements.push(
+          <p key={index} className="text-sm leading-relaxed">{renderInline(line)}</p>
+        )
+      } else {
+        flushList()
+      }
+    })
+    flushList()
+    return elements
+  }
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'termos':
         return (
           <div className="prose prose-sm max-w-none text-gray-700 space-y-4">
-            {TERMOS_CONTENT.split('\n').map((line, index) => {
-              if (line.startsWith('#')) {
-                const level = line.match(/^#+/)[0].length
-                const text = line.replace(/^#+\s/, '')
-                return level === 1 ? (
-                  <h1 key={index} className="text-3xl font-bold text-gray-900 mt-6 mb-4">
-                    {text}
-                  </h1>
-                ) : (
-                  <h2 key={index} className="text-xl font-bold text-gray-800 mt-4 mb-2">
-                    {text}
-                  </h2>
-                )
-              }
-              if (line.trim()) {
-                return (
-                  <p key={index} className="text-sm leading-relaxed">
-                    {line}
-                  </p>
-                )
-              }
-              return <div key={index} />
-            })}
+            {renderMarkdown(TERMOS_CONTENT)}
           </div>
         )
 
       case 'privacidade':
         return (
           <div className="prose prose-sm max-w-none text-gray-700 space-y-4">
-            {PRIVACIDADE_CONTENT.split('\n').map((line, index) => {
-              if (line.startsWith('#')) {
-                const level = line.match(/^#+/)[0].length
-                const text = line.replace(/^#+\s/, '')
-                return level === 1 ? (
-                  <h1 key={index} className="text-3xl font-bold text-gray-900 mt-6 mb-4">
-                    {text}
-                  </h1>
-                ) : (
-                  <h2 key={index} className="text-xl font-bold text-gray-800 mt-4 mb-2">
-                    {text}
-                  </h2>
-                )
-              }
-              if (line.trim()) {
-                return (
-                  <p key={index} className="text-sm leading-relaxed">
-                    {line}
-                  </p>
-                )
-              }
-              return <div key={index} />
-            })}
+            {renderMarkdown(PRIVACIDADE_CONTENT)}
           </div>
         )
 

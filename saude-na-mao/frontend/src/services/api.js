@@ -182,4 +182,47 @@ export const userService = {
   setDefaultAddress: (id) => api.patch(`/users/addresses/${id}/default`),
 }
 
+export const interactionService = {
+  check: (data) => api.post('/produtos/interactions', data),
+}
+
+export const geoService = {
+  geocodeCep: (cep) => api.get(`/geo/cep/${cep}`),
+}
+
+export const reviewService = {
+  create: (pharmacyId, data) => api.post(`/farmacias/${pharmacyId}/reviews`, data),
+  list: (pharmacyId) => api.get(`/farmacias/${pharmacyId}/reviews`),
+}
+
+export const adminService = {
+  getDashboard: () => api.get('/admin/dashboard'),
+  listUsers: (params) => api.get('/admin/users', { params }),
+  toggleUserStatus: (id) => api.patch(`/admin/users/${id}/toggle-status`),
+  getUserDetails: (id) => api.get(`/admin/users/${id}`),
+  listProducts: (params) => api.get('/admin/produtos', { params }),
+  toggleProductStatus: (id) => api.patch(`/admin/produtos/${id}/toggle-status`),
+  listPharmacies: (params) => api.get('/admin/farmacias', { params }),
+  togglePharmacyStatus: (id) => api.patch(`/admin/farmacias/${id}/toggle-status`),
+  getAuditLogs: (params) => api.get('/admin/audit-logs', { params }),
+}
+
+export const pharmacyOwnerService = {
+  getPharmacy: (id) => api.get(`/farmacias/${id}`),
+  getOrders: (id, params) => api.get(`/farmacias/${id}/pedidos`, { params }),
+  updateOrderStatus: (orderId, status) => api.patch(`/pedidos/${orderId}/status`, { status }),
+  getOrderStats: (id) => api.get(`/farmacias/${id}/stats`),
+  createProduct: (data) => api.post('/produtos', data),
+  updateProduct: (id, data) => api.put(`/produtos/${id}`, data),
+}
+
+export const deliveryService = {
+  getAvailable: () => api.get('/entregas/disponiveis'),
+  getMy: () => api.get('/entregas/minhas'),
+  accept: (id) => api.post(`/entregas/${id}/aceitar`),
+  updateStatus: (id, data) => api.patch(`/entregas/${id}/status`, data),
+  confirm: (id, data) => api.post(`/entregas/${id}/confirmar`, data),
+  cancel: (id, data) => api.post(`/entregas/${id}/cancelar`, data),
+}
+
 export default api

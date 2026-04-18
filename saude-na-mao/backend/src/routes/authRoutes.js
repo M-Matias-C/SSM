@@ -9,7 +9,7 @@ const router = express.Router();
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: process.env.NODE_ENV === "production" ? 10 : 100,
   message: {
     success: false,
     message: "Muitas tentativas, tente novamente mais tarde.",
@@ -82,6 +82,15 @@ router.post(
 router.post("/refresh-token", authController.refreshToken);
 
 router.post("/logout", authController.logout, audit("LOGOUT", "User"));
+
+router.post(
+  "/google",
+  authLimiter,
+  [body("credential").notEmpty().withMessage("Token do Google é obrigatório")],
+  validateRequest,
+  authController.googleAuth,
+  audit("GOOGLE_LOGIN", "User"),
+);
 
 router.post(
   "/forgot-password",

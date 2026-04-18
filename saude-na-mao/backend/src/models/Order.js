@@ -161,6 +161,11 @@ const orderSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    id_entrega: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Delivery",
+      default: null,
+    },
     itens: {
       type: [orderItemSchema],
       default: [],
@@ -222,6 +227,13 @@ const orderSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    qr_token: {
+      type: String,
+      select: false,
+    },
+    entregue_em: {
+      type: Date,
+    },
     avaliacao_entrega: {
       type: Number,
       min: 1,
@@ -248,6 +260,16 @@ const orderSchema = new mongoose.Schema(
     notificacoes_enviadas: {
       type: [String],
       default: [],
+    },
+    farmaceutico_dispensador: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    numero_nf: {
+      type: String,
+      trim: true,
+      default: null,
     },
   },
   {

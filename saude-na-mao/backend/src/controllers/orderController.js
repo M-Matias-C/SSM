@@ -74,13 +74,13 @@ async function updateOrderStatus(req, res, next) {
     const { id } = req.params;
     const { novoStatus, observacao, entregador, pharmacyId } = req.body;
 
-    if (req.user.tipo_usuario === "farmacia" && !pharmacyId) {
+    if ((req.user.tipo_usuario === "dono_farmacia" || req.user.tipo_usuario === "farmaceutico") && !pharmacyId) {
       throw createError("pharmacyId é obrigatório para atualizar pedido", 400);
     }
 
     const pedido = await orderService.updateOrderStatus(id, novoStatus, {
       usuarioId: req.user.tipo_usuario === "cliente" ? req.user.id : undefined,
-      pharmacyId: req.user.tipo_usuario === "farmacia" ? pharmacyId : undefined,
+      pharmacyId: ["dono_farmacia", "farmaceutico"].includes(req.user.tipo_usuario) ? pharmacyId : undefined,
       observacao,
       entregador,
     });
@@ -113,13 +113,13 @@ async function rejectOrder(req, res, next) {
     const { id } = req.params;
     const { motivo, pharmacyId } = req.body;
 
-    if (req.user.tipo_usuario === "farmacia" && !pharmacyId) {
+    if ((req.user.tipo_usuario === "dono_farmacia" || req.user.tipo_usuario === "farmaceutico") && !pharmacyId) {
       throw createError("pharmacyId é obrigatório para rejeitar pedido", 400);
     }
 
     const pedido = await orderService.rejectOrder(
       id,
-      req.user.tipo_usuario === "farmacia" ? pharmacyId : undefined,
+      ["dono_farmacia", "farmaceutico"].includes(req.user.tipo_usuario) ? pharmacyId : undefined,
       motivo,
     );
 
@@ -137,7 +137,7 @@ async function updateDeliveryLocation(req, res, next) {
     const { id } = req.params;
     const { latitude, longitude, pharmacyId } = req.body;
 
-    if (req.user.tipo_usuario === "farmacia" && !pharmacyId) {
+    if ((req.user.tipo_usuario === "dono_farmacia" || req.user.tipo_usuario === "farmaceutico") && !pharmacyId) {
       throw createError(
         "pharmacyId é obrigatório para atualizar localização do pedido",
         400,
@@ -147,7 +147,7 @@ async function updateDeliveryLocation(req, res, next) {
     await orderService.updateDeliveryLocation(id, {
       latitude,
       longitude,
-      pharmacyId: req.user.tipo_usuario === "farmacia" ? pharmacyId : undefined,
+      pharmacyId: ["dono_farmacia", "farmaceutico"].includes(req.user.tipo_usuario) ? pharmacyId : undefined,
     });
 
     return sendSuccess(res, {
@@ -182,7 +182,7 @@ async function generatePickupCode(req, res, next) {
     const { id } = req.params;
     const { pharmacyId } = req.body;
 
-    if (req.user.tipo_usuario === "farmacia" && !pharmacyId) {
+    if ((req.user.tipo_usuario === "dono_farmacia" || req.user.tipo_usuario === "farmaceutico") && !pharmacyId) {
       throw createError(
         "pharmacyId é obrigatório para gerar código de retirada",
         400,
@@ -191,7 +191,7 @@ async function generatePickupCode(req, res, next) {
 
     const codigo_retirada = await orderService.generatePickupCode(
       id,
-      req.user.tipo_usuario === "farmacia" ? pharmacyId : undefined,
+      ["dono_farmacia", "farmaceutico"].includes(req.user.tipo_usuario) ? pharmacyId : undefined,
     );
 
     return sendSuccess(res, {
@@ -215,6 +215,28 @@ async function getOrderStats(req, res, next) {
   }
 }
 
+async function generateDeliveryQRCode(req, res, next) {
+  try {
+    const result = await orderService.generateDeliveryQRCode(req.params.id, req.user.id);
+    return sendSuccess(res, { data: result, message: "QR Code gerado" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function confirmDeliveryByQR(req, res, next) {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ success: false, message: "Token é obrigatório" });
+    }
+    const pedido = await orderService.confirmDeliveryByQR(req.params.id, token);
+    return sendSuccess(res, { data: { pedido }, message: "Entrega confirmada via QR Code" });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   createOrder,
   getOrderById,
@@ -226,5 +248,7 @@ module.exports = {
   updateDeliveryLocation,
   rateDelivery,
   generatePickupCode,
+  generateDeliveryQRCode,
+  confirmDeliveryByQR,
   getOrderStats,
 };

@@ -154,9 +154,15 @@ function PharmacyCard({ pharmacy }) {
         </div>
 
         <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
-          <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2.5 py-1 rounded-full">
-            Aberta
-          </span>
+          {pharmacy.ativa === false ? (
+            <span className="text-xs text-red-600 font-medium bg-red-50 px-2.5 py-1 rounded-full">
+              Fechada
+            </span>
+          ) : (
+            <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2.5 py-1 rounded-full">
+              Aberta
+            </span>
+          )}
           <span className="text-xs text-gray-400">
             {pharmacy.logradouro}, {pharmacy.numero}
           </span>

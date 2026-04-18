@@ -29,7 +29,7 @@ async function createPharmacist() {
       email,
       senha: "Farmaceutico@123",
       telefone: "62999990000",
-      tipo_usuario: "farmacia",
+      tipo_usuario: "farmaceutico",
       ativo: true,
     });
 

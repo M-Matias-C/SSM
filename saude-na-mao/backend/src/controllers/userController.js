@@ -1,5 +1,5 @@
 const userService = require("../services/userService");
-const Address = require("../models/Adress");
+const Address = require("../models/Address");
 const { buscarCep } = require("../utils/viaCep");
 
 function normalizeUser(user) {
@@ -137,6 +137,24 @@ async function searchCep(req, res, next) {
   }
 }
 
+async function exportData(req, res, next) {
+  try {
+    const data = await userService.exportUserData(req.user.id);
+    res.json({ success: true, message: "Dados exportados com sucesso", data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function deleteAccount(req, res, next) {
+  try {
+    const resultado = await userService.requestAccountDeletion(req.user.id);
+    res.json({ success: true, message: resultado.message, data: {} });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -147,4 +165,6 @@ module.exports = {
   setDefaultAddress,
   getOrderHistory,
   searchCep,
+  exportData,
+  deleteAccount,
 };

@@ -1,4 +1,6 @@
 const productService = require("../services/productService");
+const Product = require("../models/Product");
+const { verificarInteracoes } = require("../utils/drugInteractions");
 
 async function searchProducts(req, res, next) {
   try {
@@ -114,6 +116,38 @@ async function getFeaturedProducts(req, res, next) {
   }
 }
 
+async function checkInteractions(req, res, next) {
+  try {
+    const { principios_ativos, product_ids } = req.body;
+    let ativos = [];
+
+    if (principios_ativos && Array.isArray(principios_ativos)) {
+      ativos = principios_ativos;
+    } else if (product_ids && Array.isArray(product_ids)) {
+      const products = await Product.find({ _id: { $in: product_ids } }).select("nome principio_ativo interacoes");
+      ativos = products
+        .map((p) => p.principio_ativo || p.nome)
+        .filter(Boolean);
+    }
+
+    if (ativos.length < 2) {
+      return res.json({ success: true, data: { interacoes: [], mensagem: "Mínimo de 2 princípios ativos para verificar interações" } });
+    }
+
+    const interacoes = verificarInteracoes(ativos);
+    return res.json({
+      success: true,
+      data: {
+        interacoes,
+        total: interacoes.length,
+        tem_grave: interacoes.some((i) => i.severidade === "grave"),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   searchProducts,
   getProductById,
@@ -122,4 +156,5 @@ module.exports = {
   createProduct,
   updateProduct,
   getFeaturedProducts,
+  checkInteractions,
 };

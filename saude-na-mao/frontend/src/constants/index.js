@@ -43,6 +43,22 @@ export const API_ENDPOINTS = {
     SEND: '/suporte',
     HISTORY: '/suporte',
   },
+  DELIVERIES: {
+    AVAILABLE: '/entregas/available',
+    MY: '/entregas/my',
+    CREATE: '/entregas',
+    GET_BY_ID: '/entregas/:id',
+    ACCEPT: '/entregas/:id/accept',
+    UPDATE_STATUS: '/entregas/:id/status',
+    UPDATE_LOCATION: '/entregas/:id/location',
+    CONFIRM: '/entregas/:id/confirm',
+    RATE_CLIENT: '/entregas/:id/rate/client',
+    RATE_DRIVER: '/entregas/:id/rate/driver',
+    CANCEL: '/entregas/:id/cancel',
+  },
+  INTERACTIONS: {
+    CHECK: '/produtos/check-interactions',
+  },
 }
 
 export const HTTP_STATUS = {
@@ -88,9 +104,19 @@ export const ORDER_STATUS_LABELS = {
 
 export const USER_TYPES = {
   CLIENT: 'cliente',
-  ADMIN: 'admin',
-  PHARMACY: 'farmacia',
+  DELIVERY: 'entregador',
+  PHARMACY_OWNER: 'dono_farmacia',
+  PHARMACIST: 'farmaceutico',
+  ADMIN: 'administrador',
 }
+
+export const SELF_REGISTER_TYPES = [
+  { value: 'cliente', label: 'Cliente', description: 'Comprar medicamentos e produtos' },
+  { value: 'entregador', label: 'Entregador', description: 'Realizar entregas de pedidos' },
+  { value: 'dono_farmacia', label: 'Dono de Farmácia', description: 'Cadastrar e gerenciar sua farmácia' },
+]
+
+export const PHARMACY_ROLES = ['dono_farmacia', 'farmaceutico']
 
 export const VALIDATION_RULES = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
@@ -121,6 +147,7 @@ export const STORAGE_KEYS = {
   REFRESH_TOKEN: 'refresh_token',
   USER: 'user_data',
   CART: 'cart_items',
+  FAVORITES: 'favorites',
   PREFERENCES: 'user_preferences',
   LAST_LOGIN: 'last_login',
 }

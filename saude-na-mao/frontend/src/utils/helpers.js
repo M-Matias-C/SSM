@@ -125,8 +125,12 @@ export const armazenarLocal = (chave, dados) => {
 }
 
 export const recuperarLocal = (chave, padrao = null) => {
-  const dados = localStorage.getItem(chave)
-  return dados ? JSON.parse(dados) : padrao
+  try {
+    const dados = localStorage.getItem(chave)
+    return dados ? JSON.parse(dados) : padrao
+  } catch {
+    return padrao
+  }
 }
 
 export const removerLocal = (chave) => {

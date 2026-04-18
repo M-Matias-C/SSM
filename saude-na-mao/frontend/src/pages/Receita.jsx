@@ -15,6 +15,7 @@ import {
   Clock,
   Truck,
   Eye,
+  ShoppingCart,
 } from 'lucide-react'
 
 export default function Receita() {
@@ -184,9 +185,16 @@ export default function Receita() {
             <>
               <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-emerald-800 mb-2">Receita Aprovada!</h3>
-              <p className="text-sm text-emerald-600">
+              <p className="text-sm text-emerald-600 mb-4">
                 Sua receita foi aprovada pelo farmacêutico. Você já pode prosseguir para o pagamento.
               </p>
+              <button
+                onClick={() => navigate('/checkout')}
+                className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition inline-flex items-center gap-2"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                Ir para o Checkout
+              </button>
             </>
           ) : rxStatus === 'Rejeitada' ? (
             <>

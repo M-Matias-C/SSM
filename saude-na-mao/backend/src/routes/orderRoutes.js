@@ -8,14 +8,14 @@ const router = express.Router();
 router.get(
   "/pharmacy/:pharmacyId/stats",
   protect,
-  authorize("farmacia", "administrador"),
+  authorize("dono_farmacia", "farmaceutico", "administrador"),
   orderController.getOrderStats,
 );
 
 router.get(
   "/pharmacy/:pharmacyId",
   protect,
-  authorize("farmacia", "administrador"),
+  authorize("dono_farmacia", "farmaceutico", "administrador"),
   orderController.getPharmacyOrders,
 );
 
@@ -33,7 +33,7 @@ router.post("/:id/rate", protect, orderController.rateDelivery);
 router.patch(
   "/:id/status",
   protect,
-  authorize("farmacia", "administrador"),
+  authorize("dono_farmacia", "farmaceutico", "administrador"),
   orderController.updateOrderStatus,
   audit("ORDER_STATUS_UPDATED", "Order"),
 );
@@ -41,7 +41,7 @@ router.patch(
 router.post(
   "/:id/reject",
   protect,
-  authorize("farmacia", "administrador"),
+  authorize("dono_farmacia", "administrador"),
   orderController.rejectOrder,
   audit("ORDER_REJECTED", "Order"),
 );
@@ -49,15 +49,28 @@ router.post(
 router.patch(
   "/:id/location",
   protect,
-  authorize("farmacia", "administrador"),
+  authorize("dono_farmacia", "entregador", "administrador"),
   orderController.updateDeliveryLocation,
 );
 
 router.post(
   "/:id/pickup-code",
   protect,
-  authorize("farmacia", "administrador"),
+  authorize("dono_farmacia", "administrador"),
   orderController.generatePickupCode,
+);
+
+router.post(
+  "/:id/qr-code",
+  protect,
+  orderController.generateDeliveryQRCode,
+);
+
+router.post(
+  "/:id/confirm-qr",
+  protect,
+  authorize("entregador", "administrador"),
+  orderController.confirmDeliveryByQR,
 );
 
 module.exports = router;

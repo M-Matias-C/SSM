@@ -40,6 +40,30 @@ const prescriptionSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    tipo_receita: {
+      type: String,
+      enum: [
+        "simples",
+        "especial_c1",
+        "especial_b",
+        "antimicrobiano",
+      ],
+      default: "simples",
+    },
+    consumida: {
+      type: Boolean,
+      default: false,
+    },
+    id_pedido_vinculado: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+      default: null,
+    },
+    farmaceutico_dispensador: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
     url_arquivo: {
       type: String,
       required: true,
@@ -119,12 +143,19 @@ const prescriptionSchema = new mongoose.Schema(
             return true;
           }
 
+          const tipo = this.tipo_receita;
           const limite = new Date(dataEmissao);
-          limite.setMonth(limite.getMonth() + 6);
+
+          if (tipo === "antimicrobiano") {
+            limite.setDate(limite.getDate() + 10);
+          } else {
+            limite.setDate(limite.getDate() + 30);
+          }
+
           return value <= limite;
         },
         message:
-          "A validade da receita não pode exceder 6 meses da data de emissão.",
+          "A validade da receita excedeu o prazo legal (30 dias ou 10 dias para antimicrobianos).",
       },
     },
     observacoes: {
