@@ -13,6 +13,17 @@ export default function Carrinho() {
   const [couponLoading, setCouponLoading] = useState(false)
   const [deliveryType, setDeliveryType] = useState('moto')
   const [interactions, setInteractions] = useState([])
+  const [taxaEntrega, setTaxaEntrega] = useState(8.00)
+
+  // Update delivery fee when delivery type changes
+  useEffect(() => {
+    const fees = { moto: 8.00, retirada: 0 }
+    let taxa = fees[deliveryType] || 8.00
+    const subtotal = getTotal()
+    if (subtotal >= 150 && deliveryType === 'moto') taxa = 0
+    if (couponData?.frete_gratis) taxa = 0
+    setTaxaEntrega(taxa)
+  }, [deliveryType, couponData, items])
 
   // Reorder: load items from localStorage if present
   useEffect(() => {
@@ -47,20 +58,7 @@ export default function Carrinho() {
   const pharmacyName = items[0]?.nome_farmacia || 'Farmácia'
 
   const subtotal = getTotal()
-
-  const calculateTaxa = () => {
-    const fees = { moto: 8.00, retirada: 0 }
-    let taxa = fees[deliveryType] || 8.00
-    if (subtotal >= 150 && deliveryType === 'moto') taxa = 0
-    return taxa
-  }
-
-  const taxaEntrega = calculateTaxa()
-
   const desconto = couponData?.desconto || 0
-  const freteGratis = couponData?.frete_gratis || false
-  if (freteGratis) taxaEntrega = 0
-
   const total = Math.max(0, subtotal - desconto + taxaEntrega)
 
   const handleApplyCoupon = async () => {
