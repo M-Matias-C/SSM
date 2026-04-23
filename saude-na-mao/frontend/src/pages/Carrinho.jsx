@@ -54,7 +54,7 @@ export default function Carrinho() {
   }
 
   let taxaEntrega = deliveryFees[deliveryType] || 8.00
-  if (subtotal >= 150) taxaEntrega = 0
+  if (subtotal >= 150 && deliveryType === 'moto') taxaEntrega = 0
 
   const desconto = couponData?.desconto || 0
   const freteGratis = couponData?.frete_gratis || false

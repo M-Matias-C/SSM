@@ -101,6 +101,7 @@ export default function Farmacias() {
 }
 
 function PharmacyCard({ pharmacy }) {
+  const [hasPharmacists, setHasPharmacists] = useState(null)
   const initial = pharmacy.nome?.charAt(0) || 'F'
   const colors = [
     'from-blue-500 to-blue-600',
@@ -111,6 +112,19 @@ function PharmacyCard({ pharmacy }) {
     'from-cyan-500 to-cyan-600',
   ]
   const colorIndex = pharmacy.nome?.length % colors.length || 0
+
+  useEffect(() => {
+    const checkPharmacists = async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/v1/pharmacies/${pharmacy._id}/pharmacists`)
+        const data = await response.json()
+        setHasPharmacists(data.data && data.data.length > 0)
+      } catch {
+        setHasPharmacists(false)
+      }
+    }
+    checkPharmacists()
+  }, [pharmacy._id])
 
   return (
     <Link
@@ -124,6 +138,17 @@ function PharmacyCard({ pharmacy }) {
         {pharmacy.avaliacao >= 4.5 && (
           <div className="absolute top-3 right-3 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1">
             <Star className="w-3 h-3 fill-current" /> Top
+          </div>
+        )}
+        {hasPharmacists === true && (
+          <div className="absolute bottom-3 right-3 bg-emerald-500 text-white text-xs font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+            <span className="w-2 h-2 bg-white rounded-full inline-block animate-pulse"></span>
+            Farmacêutico
+          </div>
+        )}
+        {hasPharmacists === false && (
+          <div className="absolute bottom-3 right-3 bg-gray-400 text-white text-xs font-bold px-2.5 py-1 rounded-lg opacity-75">
+            Sem Farmacêutico
           </div>
         )}
       </div>

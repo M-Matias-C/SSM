@@ -33,19 +33,36 @@ export default function ProductCard({ product }) {
   }
 
   const isControlled = product.controlado || product.necessitaReceita
+  const isOutOfStock = product.estoque === 0
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition transform hover:-translate-y-1">
-      <div className="bg-gradient-to-br from-blue-50 to-green-50 h-48 flex items-center justify-center relative">
+    <div className={`rounded-lg shadow-md overflow-hidden transition transform hover:-translate-y-1 ${
+      isOutOfStock 
+        ? 'bg-gray-100 opacity-60 hover:opacity-70' 
+        : 'bg-white hover:shadow-lg'
+    }`}>
+      <div className={`h-48 flex items-center justify-center relative ${
+        isOutOfStock 
+          ? 'bg-gradient-to-br from-gray-100 to-gray-200' 
+          : 'bg-gradient-to-br from-blue-50 to-green-50'
+      }`}>
         <img
           src={product.imagem || 'https://via.placeholder.com/200'}
           alt={product.nome}
-          className="h-32 w-32 object-contain"
+          className={`h-32 w-32 object-contain ${isOutOfStock ? 'grayscale' : ''}`}
         />
+        {isOutOfStock && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-t-lg">
+            <span className="bg-red-600 text-white font-bold px-4 py-2 rounded-lg text-sm">
+              FORA DE ESTOQUE
+            </span>
+          </div>
+        )}
         <button
           onClick={() => toggleFavorite({ id: product.id || product._id, nome: product.nome, preco: product.preco, imagem_url: product.imagem, id_farmacia: product.id_farmacia })}
           className="absolute top-2 left-2 p-1.5 rounded-full bg-white/80 hover:bg-white shadow-sm transition"
           aria-label={favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+          disabled={isOutOfStock}
         >
           <Heart className={`w-5 h-5 transition ${favorite ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
         </button>
@@ -57,24 +74,24 @@ export default function ProductCard({ product }) {
       </div>
 
       <div className="p-4">
-        <h3 className="font-semibold text-gray-800 line-clamp-2 mb-2">
+        <h3 className={`font-semibold line-clamp-2 mb-2 ${isOutOfStock ? 'text-gray-500' : 'text-gray-800'}`}>
           {product.nome}
         </h3>
 
         {product.descricao && (
-          <p className="text-xs text-gray-600 mb-3 line-clamp-1">
+          <p className={`text-xs mb-3 line-clamp-1 ${isOutOfStock ? 'text-gray-400' : 'text-gray-600'}`}>
             {product.descricao}
           </p>
         )}
 
         <div className="mb-4">
-          <div className="text-2xl font-bold text-primary">
+          <div className={`text-2xl font-bold ${isOutOfStock ? 'text-gray-400 line-through' : 'text-primary'}`}>
             R$ {product.preco?.toFixed(2) || '0.00'}
           </div>
           {product.estoque > 0 ? (
-            <p className="text-xs text-green-600">✓ Disponível ({product.estoque})</p>
+            <p className="text-xs text-green-600 font-semibold">✓ Disponível ({product.estoque})</p>
           ) : (
-            <p className="text-xs text-red-600">Fora de estoque</p>
+            <p className="text-xs text-red-600 font-semibold">⚠️ Fora de estoque</p>
           )}
         </div>
 
