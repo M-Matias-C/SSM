@@ -4,8 +4,12 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const { OAuth2Client } = require("google-auth-library");
 
-function generateAccessToken(userId, tipo_usuario) {
-  return jwt.sign({ id: userId, tipo: tipo_usuario }, process.env.JWT_SECRET, {
+function generateAccessToken(userId, tipo_usuario, role) {
+  return jwt.sign({ 
+    id: userId, 
+    tipo: tipo_usuario,
+    role: role || tipo_usuario, // Incluir role no JWT
+  }, process.env.JWT_SECRET, {
     expiresIn: "1h",
   });
 }
@@ -149,7 +153,7 @@ async function loginUser({ email, senha }) {
     throw err;
   }
   await user.resetLoginAttempts();
-  const accessToken = generateAccessToken(user._id, user.tipo_usuario);
+  const accessToken = generateAccessToken(user._id, user.tipo_usuario, user.role);
   const refreshToken = generateRefreshToken(user._id);
   user.refreshToken = refreshToken;
   await user.save();
@@ -242,7 +246,7 @@ async function refreshAccessToken(refreshToken) {
     err.statusCode = 401;
     throw err;
   }
-  return generateAccessToken(user._id, user.tipo_usuario);
+  return generateAccessToken(user._id, user.tipo_usuario, user.role);
 }
 
 async function forgotPassword(email) {

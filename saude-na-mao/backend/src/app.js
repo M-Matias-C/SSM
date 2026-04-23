@@ -24,6 +24,8 @@ const deliveryRoutes = require("./routes/deliveryRoutes");
 const drugRoutes = require("./routes/drugRoutes");
 const auditRoutes = require("./routes/auditRoutes");
 const trackingRoutes = require("./routes/trackingRoutes");
+const verificationRoutes = require("./routes/verificationRoutes");
+const { authenticate, auditLog } = require("./middlewares/auth");
 const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
@@ -45,6 +47,9 @@ app.use((req, res, next) => {
 });
 
 app.use(cookieParser());
+
+// Middleware de auditoria (log de todas as ações)
+app.use(auditLog);
 
 app.use("/uploads", express.static("uploads"));
 app.use("/uploads/comprovantes", express.static("uploads/comprovantes"));
@@ -99,6 +104,10 @@ app.use("/api/v1/auditoria", auditRoutes);
 
 app.use("/api/v1/tracking", trackingRoutes);
 app.use("/api/v1/rastreamento", trackingRoutes);
+
+// Rotas de Verificação (RBAC - Proprietário de Farmácia)
+app.use("/api/v1/verification", verificationRoutes);
+app.use("/api/v1/verificacao", verificationRoutes);
 
 app.use((req, res, next) => {
   res.status(404).json({ success: false, message: "Rota não encontrada" });

@@ -11,7 +11,11 @@ function normalizeUser(user) {
     email: userObj.email,
     telefone: userObj.telefone,
     cpf: userObj.cpf,
-    role: userObj.tipo_usuario,
+    role: userObj.role || userObj.tipo_usuario, // Usar novo campo 'role'
+    tipo_usuario: userObj.tipo_usuario,
+    isPharmacyOwner: userObj.isPharmacyOwner,
+    isPharmacyOwnerVerified: userObj.isPharmacyOwnerVerified,
+    documentVerificationStatus: userObj.documentVerificationStatus,
     criado_em: userObj.createdAt,
   };
   

@@ -1,14 +1,90 @@
-Usuários
+═══════════════════════════════════════════════════════════════
+        CONTAS DE TESTE - SSM (Saúde na Mão)
+═══════════════════════════════════════════════════════════════
 
-Admin
-teste: admin@saudenamao.com
-senha: Admin@123
+🎯 USE EXATAMENTE COMO ESTÁ (maiúsculas/minúsculas importam)
 
-Teste
-e-mail: teste@teste.com
-senha: Teste@123
+───────────────────────────────────────────────────────────────
+👤 CLIENTE (Acesso Normal)
+───────────────────────────────────────────────────────────────
+Email:    teste@teste.com
+Senha:    Teste@123
+Tipo:     Cliente (pode comprar, navegar, chat com farmacêutico)
+Permissão: VER - Farmácias, Medicamentos, Carrinho, Pedidos, Perfil
+Bloqueado: Admin, Analytics, Gerenciar Farmácia
 
-Farmaceutico
-e-mail: farmaceutico@farmaceutico.com
-senha: Farmaceutico@123
 
+───────────────────────────────────────────────────────────────
+👨‍⚕️ FARMACÊUTICO (Validação de Receitas)
+───────────────────────────────────────────────────────────────
+Email:    farmaceutico@saudenamao.com
+Senha:    Farm@123
+Tipo:     Farmacêutico (valida receitas, verifica interações)
+Permissão: VER - Dashboard, Validações, Alertas, Chat
+Bloqueado: Admin, Gráficos, Analytics
+
+
+───────────────────────────────────────────────────────────────
+🚚 ENTREGADOR (Entrega de Medicamentos)
+───────────────────────────────────────────────────────────────
+Email:    entregador@saudenamao.com
+Senha:    Entrega@123
+Tipo:     Entregador (rastreia e entrega pedidos)
+Permissão: VER - Minhas Entregas, Mapa, Status
+Bloqueado: Admin, Gerenciar, Vendas
+
+
+───────────────────────────────────────────────────────────────
+🏪 DONO DE FARMÁCIA (Proprietário - com Verificação)
+───────────────────────────────────────────────────────────────
+Email:    dono@farmacia.com
+Senha:    Dono@123
+Tipo:     Dono de Farmácia (gerencia farmácia, vê analytics)
+Permissão: VER - Dashboard B2B, Vendas, Medicamentos, Farmacêuticos
+Status:   ⚠️  PENDENTE DE VERIFICAÇÃO (precisa enviar documento)
+Bloqueado: Admin features até verificação
+
+
+───────────────────────────────────────────────────────────────
+🔑 ADMIN (Controle Total)
+───────────────────────────────────────────────────────────────
+Email:    admin@saudenamao.com
+Senha:    Admin@123
+Tipo:     Administrador (acesso total)
+Permissão: VER TUDO - Dashboard, Usuários, Farmácias, Verificações, Logs
+Bloqueado: Nada (acesso total)
+
+
+───────────────────────────────────────────────────────────────
+📝 PARA DEMONSTRAÇÃO NA BANCA
+───────────────────────────────────────────────────────────────
+
+PASSO 1: Fazer login como CLIENTE
+- Mostra: Menu limitado (Farmácias, Carrinho, Pedidos)
+- Explica: "Cliente vê APENAS o que lhe compete"
+
+PASSO 2: Tentar acessar /admin como cliente
+- Resultado: HTTP 403 ou "Acesso Negado"
+- Explica: "RBAC bloqueia tentativas de contorno"
+
+PASSO 3: Fazer logout e login como ADMIN
+- Mostra: Menu completo (Usuários, Farmácias, Verificações, Analytics)
+- Explica: "Admin vê TUDO"
+
+PASSO 4: Ir para "Gerenciar Proprietários"
+- Mostra: Proprietários aguardando verificação
+- Explica: "Precisam enviar documento (CPF/CNPJ)"
+- Clica: "Aprovar" ou "Rejeitar"
+- Explica: "Evita fraude e cumpre LGPD"
+
+
+═══════════════════════════════════════════════════════════════
+💡 DICAS
+═══════════════════════════════════════════════════════════════
+
+✅ COPIE E COLE as credenciais (evita erros de digitação)
+✅ NÃO CRIE NOVAS CONTAS (use as pré-populadas)
+✅ SE ESQUECER A SENHA, execute: npm run seed
+✅ O BANCO reseta quando você roda seed
+
+═══════════════════════════════════════════════════════════════

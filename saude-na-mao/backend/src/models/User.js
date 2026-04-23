@@ -36,6 +36,22 @@ const UserSchema = new mongoose.Schema({
     enum: ["cliente", "entregador", "dono_farmacia", "farmaceutico", "administrador"],
     default: "cliente",
   },
+  // NOVO: Role (normalizado para RBAC)
+  role: {
+    type: String,
+    enum: ["admin", "cliente", "farmaceutico", "dono_farmacia", "entregador"],
+    default: function() {
+      // Converter tipo_usuario para role automaticamente
+      const map = {
+        "administrador": "admin",
+        "farmaceutico": "farmaceutico",
+        "dono_farmacia": "dono_farmacia",
+        "entregador": "entregador",
+        "cliente": "cliente"
+      };
+      return map[this.tipo_usuario] || "cliente";
+    }
+  },
   data_cadastro: {
     type: Date,
     default: Date.now,
@@ -82,6 +98,35 @@ const UserSchema = new mongoose.Schema({
     data_aceite: { type: Date },
     ip_aceite: { type: String },
     versao_termo: { type: String, default: "1.0" },
+  },
+  // NOVO: Verificação de Proprietário de Farmácia (LGPD e Falsidade Ideológica)
+  isPharmacyOwner: {
+    type: Boolean,
+    default: false,
+  },
+  isPharmacyOwnerVerified: {
+    type: Boolean,
+    default: false,
+  },
+  documentVerificationStatus: {
+    type: String,
+    enum: ["not_submitted", "pending", "approved", "rejected"],
+    default: "not_submitted",
+  },
+  documentVerification: {
+    documentType: {
+      type: String,
+      enum: ["cpf", "cnpj", "rg", "residency_proof"],
+    },
+    documentUrl: String,
+    documentHash: String,
+    submittedAt: Date,
+    verifiedAt: Date,
+    verifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    rejectionReason: String,
   },
   dados_entregador: {
     tipo_veiculo: {
