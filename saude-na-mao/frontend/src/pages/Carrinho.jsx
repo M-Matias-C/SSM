@@ -48,13 +48,14 @@ export default function Carrinho() {
 
   const subtotal = getTotal()
 
-  const deliveryFees = {
-    moto: 8.00,
-    retirada: 0,
+  const calculateTaxa = () => {
+    const fees = { moto: 8.00, retirada: 0 }
+    let taxa = fees[deliveryType] || 8.00
+    if (subtotal >= 150 && deliveryType === 'moto') taxa = 0
+    return taxa
   }
 
-  let taxaEntrega = deliveryFees[deliveryType] || 8.00
-  if (subtotal >= 150 && deliveryType === 'moto') taxaEntrega = 0
+  const taxaEntrega = calculateTaxa()
 
   const desconto = couponData?.desconto || 0
   const freteGratis = couponData?.frete_gratis || false
