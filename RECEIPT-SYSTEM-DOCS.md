@@ -61,17 +61,38 @@ Botão muda de "Finalizar Compra" para "ENVIAR RECEITA"
           Será necessário enviar a receita médica."
 ```
 
-### Passo 3: Upload da Receita
+### Passo 3: Upload da Receita - Página Dedicada
 ```
-Modal abre com:
-- Seleção de tipo de receita (Simples / C1 / B / Antimicrobiano)
-- Upload de arquivo (JPG, PNG, PDF até 5MB)
-- Informações sobre validade:
-  * Simples/C1/B: 30 dias
-  * Antimicrobiano: 10 dias
+Cliente clica "Enviar Receita"
+→ Redireciona para página /receita (não é modal)
+Página mostra:
+- Título "Receita Médica"
+- Lista de medicamentos controlados do pedido
+- Como funciona (3 passos: envie foto, farmácia valida, entregador busca)
+- Área de upload grande com preview
+- Informações importantes (validade, entregador buscar receita física)
+- Link "Voltar ao carrinho" no topo
 ```
 
-### Passo 4: Notificação ao Farmacêutico
+### Passo 4: Upload do Arquivo
+```
+Cliente clica na área de upload
+Seleciona arquivo JPG, PNG ou PDF (até 15MB)
+Preview da imagem é mostrado
+Remove arquivo clicando em X se precisar
+Clica botão "Enviar Receita"
+```
+
+### Passo 5: Aguardando Aprovação
+```
+Sistema mostra status em tempo real:
+- Ícone com animação de relógio (⏳)
+- Mensagem: "Sua receita foi enviada e está sendo avaliada"
+- Página atualiza automaticamente a cada 5 segundos (polling)
+- Cliente pode voltar ao carrinho se quiser
+```
+
+### Passo 6: Farmacêutico Analia
 ```
 Dashboard do farmacêutico:
 → Nova aba "Receitas Pendentes"
@@ -79,32 +100,31 @@ Dashboard do farmacêutico:
 → Farmacêutico clica para ver detalhes
 ```
 
-### Passo 5: Análise pelo Farmacêutico
+### Passo 7: Resultado da Análise
 ```
-Farmacêutico vê:
-✓ Imagem da receita (link para download)
-✓ Dados do paciente (nome, CPF, histórico)
-✓ Medicamentos solicitados
-✓ Alertas automáticos (validade, CRM, etc)
+Opção 1 - Aprovada:
+  ✓ Status da página muda para "Receita Aprovada!"
+  ✓ Botão "Ir para o Checkout" ativa e fica em verde
+  ✓ Cliente clica e vai para checkout
+  ✓ Pedido é atualizado para status "em_processamento"
 
-Ação:
-→ [APROVAR] - Receita marcada como CONSUMIDA
-→ [REJEITAR] - Deve informar motivo
-
-Pedido é atualizado:
-Aprovado → status = "em_processamento"
-Rejeitado → status = "cancelado" + motivo
+Opção 2 - Rejeitada:
+  ✗ Status da página muda para "Receita Rejeitada"
+  ✗ Mostra motivo da rejeição (ex: "CRM inválido")
+  ✗ Botão "Enviar Nova Receita" aparece
+  ✗ Cliente pode tentar novamente
+  ✗ Pedido é cancelado
 ```
 
-### Passo 6: Cliente Recebe Notificação
+### Passo 8: Finalizar Compra
 ```
-Cliente recebe notificação:
-✓ Receita Aprovada → Pedido prossegue normalmente
-✗ Receita Rejeitada → Pedido cancelado + motivo
-
-Se rejeitado:
-→ Cliente pode fazer novo upload com receita correta
-→ Sistema detecta se é mesma receita (token igual)
+Após aprovação:
+→ Cliente clica "Ir para o Checkout"
+→ Vai para página de pagamento
+→ Escolhe método de pagamento
+→ Confirma pedido
+→ Farmácia é notificada para preparar entrega
+→ Entregador receberá a receita FÍSICA na entrega
 ```
 
 ---
