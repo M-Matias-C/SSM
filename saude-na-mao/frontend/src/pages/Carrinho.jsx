@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
-import { useCartStore } from '../stores/store'
+import { useCartStore, useAuthStore } from '../stores/store'
 import { useNavigate, Link } from 'react-router-dom'
-import { Trash2, ArrowRight, Tag, Truck, Store, X, CheckCircle, AlertTriangle } from 'lucide-react'
+import { Trash2, ArrowRight, Tag, Truck, Store, X, CheckCircle, AlertTriangle, UploadCloud } from 'lucide-react'
 import api, { interactionService } from '../services/api'
+import { UploadReceitaModal } from '../components/UploadReceitaModal'
 
 export default function Carrinho() {
   const navigate = useNavigate()
+  const { user } = useAuthStore()
   const { items, removeItem, updateQuantity, getTotal, clearCart, addItem } = useCartStore()
   const [couponCode, setCouponCode] = useState('')
   const [couponData, setCouponData] = useState(null)
@@ -13,6 +15,8 @@ export default function Carrinho() {
   const [couponLoading, setCouponLoading] = useState(false)
   const [deliveryType, setDeliveryType] = useState('moto')
   const [interactions, setInteractions] = useState([])
+  const [showReceitaModal, setShowReceitaModal] = useState(false)
+  const [uploadedReceita, setUploadedReceita] = useState(null)
 
   // Reorder: load items from localStorage if present
   useEffect(() => {
@@ -89,6 +93,12 @@ export default function Carrinho() {
   const hasControlled = items.some((i) => i.controlado)
 
   const handleFinalize = () => {
+    if (hasControlled && !uploadedReceita) {
+      // Abrir modal para upload de receita
+      setShowReceitaModal(true)
+      return
+    }
+
     // Save cart state for checkout
     localStorage.setItem('checkout_data', JSON.stringify({
       subtotal,
@@ -99,13 +109,29 @@ export default function Carrinho() {
       couponData,
       pharmacyName,
       pharmacyId: items[0]?.id_farmacia,
+      uploadedReceita,
     }))
 
-    if (hasControlled) {
-      navigate('/receita')
-    } else {
+    navigate('/checkout')
+  }
+
+  const handleReceitaUpload = (receita) => {
+    setUploadedReceita(receita)
+    // Fechar modal e prosseguir para checkout após 2 segundos
+    setTimeout(() => {
+      localStorage.setItem('checkout_data', JSON.stringify({
+        subtotal,
+        taxaEntrega,
+        desconto,
+        total,
+        deliveryType,
+        couponData,
+        pharmacyName,
+        pharmacyId: items[0]?.id_farmacia,
+        uploadedReceita: receita,
+      }))
       navigate('/checkout')
-    }
+    }, 2500)
   }
 
   if (items.length === 0) {
@@ -379,6 +405,14 @@ export default function Carrinho() {
           </div>
         </aside>
       </div>
+
+      {/* Modal de Upload de Receita */}
+      <UploadReceitaModal
+        isOpen={showReceitaModal}
+        onClose={() => setShowReceitaModal(false)}
+        onReceitaUpload={handleReceitaUpload}
+        medicamentosControlados={items.filter((i) => i.controlado)}
+      />
     </div>
   )
 }

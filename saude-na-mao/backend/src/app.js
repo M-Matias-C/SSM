@@ -12,6 +12,7 @@ const pharmacistRoutes = require("./routes/pharmacistRoutes");
 const productRoutes = require("./routes/productRoutes");
 const geoRoutes = require("./routes/geoRoutes");
 const prescriptionRoutes = require("./routes/prescriptionRoutes");
+const prescriptionUseRoutes = require("./routes/prescriptionUseRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const orderRoutes = require("./routes/orderRoutes");
@@ -70,6 +71,9 @@ app.use("/api/v1/geo", geoRoutes);
 
 app.use("/api/v1/prescriptions", prescriptionRoutes);
 app.use("/api/v1/receitas", prescriptionRoutes);
+
+app.use("/api/v1/prescription-uses", prescriptionUseRoutes);
+app.use("/api/v1/receitas-uso", prescriptionUseRoutes);
 
 app.use("/api/v1/cart", cartRoutes);
 app.use("/api/v1/carrinho", cartRoutes);

@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../stores/store';
+import { ManageReceitasTab } from '../components/ManageReceitasTab';
 import './PharmacistDashboard.css';
 
 const API_BASE = 'http://localhost:5000/api/v1/pharmacists';
 const REFRESH_INTERVAL = 30000; // 30 segundos
 
 export function PharmacistDashboard() {
-  const { token } = useAuthStore();
+  const { token, user } = useAuthStore();
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [stats, setStats] = useState({
     validacoes_pendentes: 0,
     alertas_ativos: 0,
@@ -198,6 +200,81 @@ export function PharmacistDashboard() {
           )}
         </section>
       </div>
+
+      {/* Abas de navegação */}
+      <div className="mt-6 border-b border-gray-200">
+        <div className="flex gap-8">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`pb-4 px-2 font-medium transition-colors ${
+              activeTab === 'dashboard'
+                ? 'border-b-2 border-primary text-primary'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            📊 Dashboard
+          </button>
+          <button
+            onClick={() => setActiveTab('receitas')}
+            className={`pb-4 px-2 font-medium transition-colors ${
+              activeTab === 'receitas'
+                ? 'border-b-2 border-primary text-primary'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            📋 Gerenciar Receitas
+          </button>
+        </div>
+      </div>
+
+      {/* Conteúdo das abas */}
+      {activeTab === 'dashboard' ? (
+        <div className="dashboard-content mt-6">
+          <section className="validations-section">
+            <h2>⏳ Validações Pendentes</h2>
+            {pendingValidations.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">📋</div>
+                <p>Nenhuma validação pendente</p>
+                <small>Tudo certo! Você está em dia com as análises.</small>
+              </div>
+            ) : (
+              <div className="validations-list">
+                {pendingValidations.map(validation => (
+                  <ValidationCard
+                    key={validation._id}
+                    validation={validation}
+                    onApprove={() => handleValidation(validation._id, true)}
+                    onReject={() => handleValidation(validation._id, false)}
+                    isLoading={validatingId === validation._id}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="alerts-section">
+            <h2>🚨 Alertas Recentes</h2>
+            {alerts.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">✨</div>
+                <p>Nenhum alerta no momento</p>
+                <small>Sistema funcionando perfeitamente.</small>
+              </div>
+            ) : (
+              <div className="alerts-list">
+                {alerts.map(alert => (
+                  <AlertCard key={alert._id} alert={alert} />
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      ) : (
+        <div className="mt-6">
+          <ManageReceitasTab id_farmacia={user?.id_farmacia} />
+        </div>
+      )}
 
       <div className="refresh-indicator">
         ↻ Próxima atualização em {Math.round(REFRESH_INTERVAL / 1000)}s
