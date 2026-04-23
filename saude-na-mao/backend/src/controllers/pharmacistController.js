@@ -256,3 +256,128 @@ exports.updateRating = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.getStats = async (req, res, next) => {
+  try {
+    const { _id } = req.user;
+    
+    const pharmacist = await Pharmacist.findOne({ usuario_id: _id });
+    if (!pharmacist) {
+      return res.status(404).json({
+        success: false,
+        message: "Farmacêutico não encontrado",
+      });
+    }
+
+    const stats = {
+      validacoes_pendentes: pharmacist.validacoes_pendentes || 0,
+      alertas_ativos: pharmacist.alertas_ativos || 0,
+      receitas_validadas_hoje: pharmacist.receitas_validadas_hoje || 0,
+      atendimentos_media_resposta: pharmacist.tempo_resposta_medio || 0,
+      rating: pharmacist.rating || 0,
+      total_atendimentos: pharmacist.total_atendimentos || 0,
+    };
+
+    res.json({
+      success: true,
+      data: stats,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getPendingValidations = async (req, res, next) => {
+  try {
+    const { _id } = req.user;
+    
+    // Buscar pedidos que requerem validação do farmacêutico
+    const Order = require("../models/Order");
+    const validations = await Order.find({
+      farmacia_id: req.user.farmacia_id,
+      status_validacao: 'pendente',
+    })
+      .select("_id pedido_numero medicamentos interacoes_verificadas cliente_email")
+      .populate("cliente_id", "name email")
+      .sort({ criado_em: -1 })
+      .limit(10);
+
+    res.json({
+      success: true,
+      data: validations,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getAlerts = async (req, res, next) => {
+  try {
+    const { _id } = req.user;
+    
+    const Alert = require("../models/Alert");
+    const alerts = await Alert.find({
+      farmacia_id: req.user.farmacia_id,
+      lido: false,
+    })
+      .sort({ criado_em: -1 })
+      .limit(20);
+
+    res.json({
+      success: true,
+      data: alerts,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.validatePrescription = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { aprovado, motivo } = req.body;
+
+    const Order = require("../models/Order");
+    const order = await Order.findByIdAndUpdate(
+      id,
+      {
+        status_validacao: aprovado ? 'aprovado' : 'rejeitado',
+        validacao_motivo: motivo,
+        validacao_data: new Date(),
+        validado_por: req.user._id,
+      },
+      { new: true }
+    );
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Pedido não encontrado",
+      });
+    }
+
+    // Atualizar stats do farmacêutico
+    const Pharmacist = require("../models/Pharmacist");
+    await Pharmacist.findOneAndUpdate(
+      { usuario_id: req.user._id },
+      {
+        $inc: { receitas_validadas: 1 },
+        validacoes_pendentes: Math.max(0, (req.user.validacoes_pendentes || 1) - 1),
+      }
+    );
+
+    logger.info("Prescrição validada", { 
+      orderId: id, 
+      aprovado,
+      validadoPor: req.user._id 
+    });
+
+    res.json({
+      success: true,
+      message: aprovado ? "Prescrição aprovada" : "Prescrição rejeitada",
+      data: { order },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

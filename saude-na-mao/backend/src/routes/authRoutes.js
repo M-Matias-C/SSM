@@ -48,48 +48,54 @@ const newPasswordValidator = body("novaSenha")
   .matches(/[^A-Za-z0-9]/)
   .withMessage("A senha deve conter um caractere especial");
 
+const registerValidators = [
+  body("nome").notEmpty().withMessage("Nome é obrigatório"),
+  body("email").isEmail().withMessage("E-mail inválido").normalizeEmail(),
+  passwordValidator,
+  body("cpf")
+    .optional()
+    .isLength({ min: 11, max: 11 })
+    .withMessage("CPF deve ter 11 dígitos")
+    .isNumeric()
+    .withMessage("CPF deve conter apenas números"),
+];
+
+const loginValidators = [
+  body("email").isEmail().withMessage("E-mail inválido").normalizeEmail(),
+  body("senha").notEmpty().withMessage("Senha é obrigatória"),
+];
+
+const googleValidators = [body("credential").notEmpty().withMessage("Token do Google é obrigatório")];
+
 router.post(
   "/register",
   authLimiter,
-  [
-    body("nome").notEmpty().withMessage("Nome é obrigatório"),
-    body("email").isEmail().withMessage("E-mail inválido").normalizeEmail(),
-    passwordValidator,
-    body("cpf")
-      .optional()
-      .isLength({ min: 11, max: 11 })
-      .withMessage("CPF deve ter 11 dígitos")
-      .isNumeric()
-      .withMessage("CPF deve conter apenas números"),
-  ],
+  ...registerValidators,
   validateRequest,
-  authController.register,
   audit("USER_CREATED", "User"),
+  authController.register
 );
 
 router.post(
   "/login",
   authLimiter,
-  [
-    body("email").isEmail().withMessage("E-mail inválido").normalizeEmail(),
-    body("senha").notEmpty().withMessage("Senha é obrigatória"),
-  ],
+  ...loginValidators,
   validateRequest,
-  authController.login,
   audit("LOGIN", "User"),
+  authController.login
 );
 
 router.post("/refresh-token", authController.refreshToken);
 
-router.post("/logout", authController.logout, audit("LOGOUT", "User"));
+router.post("/logout", audit("LOGOUT", "User"), authController.logout);
 
 router.post(
   "/google",
   authLimiter,
-  [body("credential").notEmpty().withMessage("Token do Google é obrigatório")],
+  ...googleValidators,
   validateRequest,
-  authController.googleAuth,
   audit("GOOGLE_LOGIN", "User"),
+  authController.googleAuth
 );
 
 router.post(

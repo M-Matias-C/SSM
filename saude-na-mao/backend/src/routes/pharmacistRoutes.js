@@ -72,4 +72,21 @@ router.put(
   pharmacistController.updateRating
 );
 
+router.get("/dashboard/stats", authMiddleware.protect, pharmacistController.getStats);
+
+router.get("/dashboard/validations/pending", authMiddleware.protect, pharmacistController.getPendingValidations);
+
+router.get("/dashboard/alerts", authMiddleware.protect, pharmacistController.getAlerts);
+
+router.patch(
+  "/validations/:id",
+  authMiddleware.protect,
+  [
+    param("id").isMongoId().withMessage("ID inválido"),
+    body("aprovado").isBoolean().withMessage("Aprovado deve ser um booleano"),
+  ],
+  validateRequest,
+  pharmacistController.validatePrescription
+);
+
 module.exports = router;

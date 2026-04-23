@@ -128,3 +128,24 @@ exports.resetPassword = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.googleAuth = async (req, res, next) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) {
+      return res.status(400).json({
+        success: false,
+        message: "Token do Google é obrigatório",
+      });
+    }
+    
+    // Placeholder for Google auth logic
+    // This would typically verify the token with Google OAuth library
+    return res.status(501).json({
+      success: false,
+      message: "Google authentication não está implementado",
+    });
+  } catch (error) {
+    next(error);
+  }
+};

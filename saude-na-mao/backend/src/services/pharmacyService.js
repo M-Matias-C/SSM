@@ -141,6 +141,20 @@ async function updatePharmacy(pharmacyId, dados) {
   return farmacia;
 }
 
+async function getPharmacists(pharmacyId) {
+  if (!mongoose.Types.ObjectId.isValid(pharmacyId)) {
+    throw createError("Farmácia não encontrada", 404);
+  }
+
+  const Pharmacist = require("../models/Pharmacist");
+  const pharmacists = await Pharmacist.find({ farmacia_id: pharmacyId })
+    .select("usuario_id crm logado status_motivo crm_validado atendimentos_dia receitas_validadas")
+    .populate("usuario_id", "name email")
+    .sort({ logado: -1, receitas_validadas: -1 });
+
+  return pharmacists;
+}
+
 module.exports = {
   listPharmacies,
   getPharmacyById,
@@ -148,4 +162,5 @@ module.exports = {
   getPharmacyProducts,
   createPharmacy,
   updatePharmacy,
+  getPharmacists,
 };

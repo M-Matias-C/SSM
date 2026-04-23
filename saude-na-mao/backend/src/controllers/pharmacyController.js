@@ -57,6 +57,15 @@ async function getPharmacyProducts(req, res, next) {
   }
 }
 
+async function getPharmacists(req, res, next) {
+  try {
+    const pharmacists = await pharmacyService.getPharmacists(req.params.id);
+    res.json({ success: true, data: pharmacists });
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function createPharmacy(req, res, next) {
   try {
     const farmacia = await pharmacyService.createPharmacy(req.body);
@@ -91,6 +100,7 @@ module.exports = {
   getPharmacyById,
   findNearbyPharmacies,
   getPharmacyProducts,
+  getPharmacists,
   createPharmacy,
   updatePharmacy,
 };

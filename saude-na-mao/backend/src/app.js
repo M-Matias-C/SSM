@@ -21,6 +21,8 @@ const adminRoutes = require("./routes/adminRoutes");
 const couponRoutes = require("./routes/couponRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
 const deliveryRoutes = require("./routes/deliveryRoutes");
+const drugRoutes = require("./routes/drugRoutes");
+const auditRoutes = require("./routes/auditRoutes");
 const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
@@ -87,6 +89,12 @@ app.use("/api/v1/avaliacoes", reviewRoutes);
 
 app.use("/api/v1/deliveries", deliveryRoutes);
 app.use("/api/v1/entregas", deliveryRoutes);
+
+app.use("/api/v1/drugs", drugRoutes);
+app.use("/api/v1/medicamentos", drugRoutes);
+
+app.use("/api/v1/audit", auditRoutes);
+app.use("/api/v1/auditoria", auditRoutes);
 
 app.use((req, res, next) => {
   res.status(404).json({ success: false, message: "Rota não encontrada" });

@@ -51,6 +51,12 @@ router.get(
   prescriptionController.getPrescriptionById,
 );
 
+router.get(
+  "/:id/receita",
+  authMiddleware.protect,
+  prescriptionController.getReceitaDigital,
+);
+
 router.delete(
   "/:id/cancel",
   authMiddleware.protect,

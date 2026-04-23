@@ -1,8 +1,10 @@
 const Prescription = require("../models/Prescription");
 const User = require("../models/User");
+const ReceitaDigital = require("../models/ReceitaDigital");
 const ocrService = require("./ocrService");
 const notificationService = require("./notificationService");
 const path = require("path");
+const crypto = require("crypto");
 
 function createError(message, statusCode) {
   const error = new Error(message);
@@ -266,6 +268,73 @@ async function getPendingPrescriptions({ page = 1, limit = 20 } = {}) {
   };
 }
 
+async function getReceitaDigital(prescriptionId, userId) {
+  const prescription = await Prescription.findById(prescriptionId)
+    .populate("id_usuario", "nome email cpf")
+    .populate("farmaceutico_dispensador", "nome crm");
+
+  if (!prescription) {
+    throw createError("Prescrição não encontrada", 404);
+  }
+
+  if (
+    prescription.id_usuario._id.toString() !== userId &&
+    prescription.farmaceutico_dispensador._id.toString() !== userId
+  ) {
+    throw createError("Acesso negado", 403);
+  }
+
+  let receita = await ReceitaDigital.findOne({ prescriptionId });
+
+  if (!receita) {
+    const farmacia = await User.findById(prescription.farmaceutico_dispensador).populate("farmacia_id", "nome");
+
+    const signatureData = crypto
+      .createHash("sha256")
+      .update(
+        prescription._id.toString() +
+        prescription.id_usuario._id.toString() +
+        new Date().toISOString(),
+      )
+      .digest("hex");
+
+    receita = new ReceitaDigital({
+      prescriptionId,
+      paciente: {
+        id: prescription.id_usuario._id,
+        nome: prescription.id_usuario.nome,
+        cpf: prescription.id_usuario.cpf,
+        dataNascimento: prescription.id_usuario.dataNascimento,
+      },
+      farmaceutico: {
+        id: prescription.farmaceutico_dispensador._id,
+        nome: prescription.farmaceutico_dispensador.nome,
+        crm: prescription.farmaceutico_dispensador.crm,
+        farmacia: farmacia?.farmacia_id?.nome || "N/A",
+      },
+      medicamentos: [],
+      assinatura: signatureData,
+      assinaturaMd5: crypto
+        .createHash("md5")
+        .update(signatureData)
+        .digest("hex"),
+    });
+
+    await receita.save();
+  }
+
+  return {
+    id: receita._id,
+    data: receita.createdAt,
+    paciente: receita.paciente,
+    farmaceutico: receita.farmaceutico,
+    medicamentos: receita.medicamentos,
+    observacoes: receita.observacoes,
+    assinatura: receita.assinatura,
+    hash: receita.hash,
+  };
+}
+
 module.exports = {
   uploadPrescription,
   getUserPrescriptions,
@@ -274,4 +343,5 @@ module.exports = {
   cancelPrescription,
   expirePrescriptions,
   getPendingPrescriptions,
+  getReceitaDigital,
 };

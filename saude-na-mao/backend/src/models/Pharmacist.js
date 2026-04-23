@@ -99,6 +99,77 @@ const PharmacistSchema = new mongoose.Schema(
         ref: "Chat",
       },
     ],
+    
+    // Status Real-time
+    logado: {
+      type: Boolean,
+      default: false,
+    },
+    status_motivo: {
+      type: String,
+      enum: ["online", "pausa", "saiu", "ausente"],
+      default: "saiu",
+    },
+    ultima_atividade: {
+      type: Date,
+      default: null,
+    },
+    token_sessao: {
+      type: String,
+      default: null,
+    },
+    
+    // Validação CRF
+    crm_validado_data: {
+      type: Date,
+      default: null,
+    },
+    crm_validado_por: {
+      type: String,
+      default: null,
+    },
+    crm_valido_ate: {
+      type: Date,
+      default: null,
+    },
+    
+    // Métricas de Desempenho
+    atendimentos_dia: {
+      type: Number,
+      default: 0,
+    },
+    receitas_validadas: {
+      type: Number,
+      default: 0,
+    },
+    alertas_emitidos: {
+      type: Number,
+      default: 0,
+    },
+    medicamentos_dispensados: {
+      type: Number,
+      default: 0,
+    },
+    
+    // Anti-Fraude & Auditoria
+    suspicoes: [
+      {
+        tipo: String,
+        data: Date,
+        motivo: String,
+        resolvido: { type: Boolean, default: false },
+      },
+    ],
+    ultima_auditoria: {
+      type: Date,
+      default: null,
+    },
+    bloqueado: {
+      type: Boolean,
+      default: false,
+    },
+    motivo_bloqueio: String,
+    
     ativo: {
       type: Boolean,
       default: true,
@@ -119,6 +190,9 @@ const PharmacistSchema = new mongoose.Schema(
 );
 
 PharmacistSchema.index({ id_farmacia: 1 });
-PharmacistSchema.index({ disponivel_chat: 1 });
+PharmacistSchema.index({ logado: 1 });
+PharmacistSchema.index({ status_motivo: 1 });
+PharmacistSchema.index({ ultima_atividade: 1 });
+PharmacistSchema.index({ bloqueado: 1 });
 
 module.exports = mongoose.model("Pharmacist", PharmacistSchema);

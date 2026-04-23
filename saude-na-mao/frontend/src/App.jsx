@@ -11,7 +11,11 @@ import FarmaciaDetalhe from './pages/FarmaciaDetalhe'
 import Produtos from './pages/Produtos'
 import Carrinho from './pages/Carrinho'
 import Checkout from './pages/Checkout'
+import CheckoutIA from './pages/CheckoutIA'
 import Receita from './pages/Receita'
+import ReceitaDigital from './pages/ReceitaDigital'
+import AnalyticsDashboard from './pages/AnalyticsDashboard'
+import SecurityAuditDashboard from './pages/SecurityAuditDashboard'
 import Login from './pages/Login'
 import Registro from './pages/Registro'
 import Perfil from './pages/Perfil'
@@ -20,6 +24,8 @@ import Rastreamento from './pages/Rastreamento'
 import Suporte from './pages/Suporte'
 import Admin from './pages/Admin'
 import Farmaceutico from './pages/Farmaceutico'
+import PharmacistDashboard from './pages/PharmacistDashboard'
+import PharmacyDashboard from './pages/PharmacyDashboard'
 import Comprovante from './pages/Comprovante'
 import Legal from './pages/Legal'
 import './App.css'
@@ -38,10 +44,10 @@ function AppContent() {
           <Route path="/produtos" element={<Produtos />} />
           <Route path="/carrinho" element={<Carrinho />} />
           <Route
-            path="/checkout"
+            path="/checkout-ia"
             element={
               <PrivateRoute excludeRoles={['farmacia']}>
-                <Checkout />
+                <CheckoutIA />
               </PrivateRoute>
             }
           />
@@ -50,6 +56,14 @@ function AppContent() {
             element={
               <PrivateRoute excludeRoles={['farmacia']}>
                 <Receita />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/receita-digital/:id"
+            element={
+              <PrivateRoute>
+                <ReceitaDigital />
               </PrivateRoute>
             }
           />
@@ -102,6 +116,38 @@ function AppContent() {
             element={
               <PrivateRoute requiredRole="farmacia">
                 <Farmaceutico />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/farmaceutico"
+            element={
+              <PrivateRoute requiredRole="farmacia">
+                <PharmacistDashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/farmacia"
+            element={
+              <PrivateRoute requiredRole="farmacia">
+                <PharmacyDashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/analytics"
+            element={
+              <PrivateRoute requiredRole="farmacia">
+                <AnalyticsDashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/seguranca"
+            element={
+              <PrivateRoute requiredRole="administrador">
+                <SecurityAuditDashboard />
               </PrivateRoute>
             }
           />

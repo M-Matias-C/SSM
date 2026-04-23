@@ -148,6 +148,29 @@ async function updateFcmToken(req, res, next) {
   }
 }
 
+async function getReceitaDigital(req, res, next) {
+  try {
+    const { id } = req.params;
+    const receita = await prescriptionService.getReceitaDigital(id, req.user.id);
+
+    if (!receita) {
+      return res.status(404).json({
+        success: false,
+        data: {},
+        message: "Receita digital não encontrada",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: receita,
+      message: "Receita digital recuperada com sucesso",
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   uploadPrescription,
   getUserPrescriptions,
@@ -156,4 +179,5 @@ module.exports = {
   cancelPrescription,
   getPendingPrescriptions,
   updateFcmToken,
+  getReceitaDigital,
 };

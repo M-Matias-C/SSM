@@ -2,6 +2,7 @@ const express = require("express");
 const { query, param, validationResult } = require("express-validator");
 const authMiddleware = require("../middlewares/authMiddleware");
 const pharmacyController = require("../controllers/pharmacyController");
+const analyticsController = require("../controllers/analyticsController");
 
 const router = express.Router();
 
@@ -36,6 +37,14 @@ router.get(
 router.get("/:id", pharmacyController.getPharmacyById);
 
 router.get("/:id/products", pharmacyController.getPharmacyProducts);
+
+router.get("/:id/pharmacists", pharmacyController.getPharmacists);
+
+router.get(
+  "/:id/analytics",
+  authMiddleware.protect,
+  analyticsController.getAnalytics,
+);
 
 router.post(
   "/",
