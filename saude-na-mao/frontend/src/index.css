@@ -123,7 +123,8 @@ html.high-contrast body {
 
 html.high-contrast .bg-white,
 html.high-contrast .bg-gray-50,
-html.high-contrast .bg-gray-100 {
+html.high-contrast .bg-gray-100,
+html.high-contrast .bg-\[#fafafa\] {
   background-color: #1a1a1a !important;
   color: #fff !important;
 }
@@ -134,18 +135,51 @@ html.high-contrast .text-gray-600,
 html.high-contrast .text-gray-700,
 html.high-contrast .text-gray-800,
 html.high-contrast .text-gray-900 {
-  color: #fff !important;
+  color: #e0e0e0 !important;
 }
 
 html.high-contrast .border-gray-100,
 html.high-contrast .border-gray-200,
 html.high-contrast .border-gray-300 {
-  border-color: #555 !important;
+  border-color: #666 !important;
 }
 
 html.high-contrast a,
 html.high-contrast .text-primary {
   color: #5ef5a0 !important;
+  text-decoration: underline;
+}
+
+html.high-contrast .bg-primary {
+  background-color: #059669 !important;
+}
+
+html.high-contrast .shadow-sm,
+html.high-contrast .shadow-md,
+html.high-contrast .shadow-lg {
+  box-shadow: 0 0 0 1px #666 !important;
+}
+
+/* Navbar specific fixes for high contrast */
+html.high-contrast nav {
+  background-color: #000 !important;
+  border-color: #666 !important;
+}
+
+html.high-contrast nav a,
+html.high-contrast nav button {
+  color: #e0e0e0 !important;
+}
+
+html.high-contrast nav a:hover,
+html.high-contrast nav button:hover {
+  color: #5ef5a0 !important;
+}
+
+/* Tab styling for high contrast */
+html.high-contrast .bg-gray-50:not(.bg-primary) {
+  background-color: #2a2a2a !important;
+  color: #e0e0e0 !important;
 }
 
 html.high-contrast .bg-primary {

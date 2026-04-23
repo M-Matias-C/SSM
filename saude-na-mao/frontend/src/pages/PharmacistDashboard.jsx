@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useAuthStore } from '../stores/store';
 import './PharmacistDashboard.css';
 
 export function PharmacistDashboard() {
+  const { token } = useAuthStore();
   const [stats, setStats] = useState({
     validacoes_pendentes: 0,
     alertas_ativos: 0,
@@ -14,22 +16,23 @@ export function PharmacistDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 5000); // Atualiza a cada 5s
-    return () => clearInterval(interval);
-  }, []);
+    if (token) {
+      fetchData();
+      const interval = setInterval(fetchData, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [token]);
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
       const [statsRes, validationsRes, alertsRes] = await Promise.all([
-        fetch('http://localhost:5000/api/v1/pharmacist/stats', {
+        fetch('http://localhost:5000/api/v1/pharmacists/dashboard/stats', {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
-        fetch('http://localhost:5000/api/v1/pharmacist/validations/pending', {
+        fetch('http://localhost:5000/api/v1/pharmacists/dashboard/validations/pending', {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
-        fetch('http://localhost:5000/api/v1/pharmacist/alerts', {
+        fetch('http://localhost:5000/api/v1/pharmacists/dashboard/alerts', {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
       ]);
@@ -55,9 +58,8 @@ export function PharmacistDashboard() {
 
   const handleValidation = async (validationId, approved) => {
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch(
-        `http://localhost:5000/api/v1/pharmacist/validations/${validationId}`,
+        `http://localhost:5000/api/v1/pharmacists/validations/${validationId}`,
         {
           method: 'PATCH',
           headers: {

@@ -13,6 +13,14 @@ function validateRequest(req, res, next) {
   next();
 }
 
+// DASHBOARD ROUTES - Devem vir ANTES de rotas com :id
+router.get("/dashboard/stats", authMiddleware.protect, pharmacistController.getStats);
+
+router.get("/dashboard/validations/pending", authMiddleware.protect, pharmacistController.getPendingValidations);
+
+router.get("/dashboard/alerts", authMiddleware.protect, pharmacistController.getAlerts);
+
+// GENERIC ROUTES - Após rotas específicas
 router.get("/available", pharmacistController.listAvailable);
 
 router.get(
@@ -71,12 +79,6 @@ router.put(
   validateRequest,
   pharmacistController.updateRating
 );
-
-router.get("/dashboard/stats", authMiddleware.protect, pharmacistController.getStats);
-
-router.get("/dashboard/validations/pending", authMiddleware.protect, pharmacistController.getPendingValidations);
-
-router.get("/dashboard/alerts", authMiddleware.protect, pharmacistController.getAlerts);
 
 router.patch(
   "/validations/:id",
