@@ -117,6 +117,8 @@ export default function Perfil() {
   if (!token) return <LoadingSpinner />
 
   const isPharmacyRole = ['dono_farmacia', 'farmaceutico'].includes(user?.tipo_usuario || user?.role)
+  const isPharmacist = (user?.tipo_usuario || user?.role) === 'farmaceutico'
+  const isPharmacyOwner = (user?.tipo_usuario || user?.role) === 'dono_farmacia'
   const isDriver = (user?.tipo_usuario || user?.role) === 'entregador'
   const isAdmin = (user?.tipo_usuario || user?.role) === 'administrador'
   const userRole = user?.tipo_usuario || user?.role
@@ -133,8 +135,10 @@ export default function Perfil() {
 
   const menuItems = [
     { id: 'dados', label: 'Meus Dados', icon: User, color: 'text-primary' },
-    isPharmacyRole
-      ? { id: 'painel', label: 'Painel do Farmacêutico', icon: Package, link: '/farmaceutico', color: 'text-blue-500' }
+    isPharmacist
+      ? { id: 'painel', label: 'Painel do Farmacêutico', icon: Clipboard, link: '/farmaceutico', color: 'text-blue-500' }
+      : isPharmacyOwner
+      ? { id: 'farmacia', label: 'Minha Farmácia', icon: Store, link: '/dono-farmacia', color: 'text-emerald-500' }
       : isDriver
       ? { id: 'entregas', label: 'Minhas Entregas', icon: Package, link: '/entregas', color: 'text-blue-500' }
       : { id: 'pedidos', label: 'Meus Pedidos', icon: Package, link: '/pedidos', color: 'text-blue-500' },

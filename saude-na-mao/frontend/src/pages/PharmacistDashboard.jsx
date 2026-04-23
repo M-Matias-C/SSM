@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../stores/store';
 import './PharmacistDashboard.css';
+
+const API_BASE = 'http://localhost:5000/api/v1/pharmacists';
+const REFRESH_INTERVAL = 30000; // 30 segundos
 
 export function PharmacistDashboard() {
   const { token } = useAuthStore();
@@ -14,52 +17,64 @@ export function PharmacistDashboard() {
   const [pendingValidations, setPendingValidations] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [validatingId, setValidatingId] = useState(null);
 
-  useEffect(() => {
-    if (token) {
-      fetchData();
-      const interval = setInterval(fetchData, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [token]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    if (!token) return;
+    
     try {
+      setError(null);
+      const headers = { 'Authorization': `Bearer ${token}` };
+
       const [statsRes, validationsRes, alertsRes] = await Promise.all([
-        fetch('http://localhost:5000/api/v1/pharmacists/dashboard/stats', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch('http://localhost:5000/api/v1/pharmacists/dashboard/validations/pending', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch('http://localhost:5000/api/v1/pharmacists/dashboard/alerts', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
+        fetch(`${API_BASE}/dashboard/stats`, { headers }),
+        fetch(`${API_BASE}/dashboard/validations/pending`, { headers }),
+        fetch(`${API_BASE}/dashboard/alerts`, { headers }),
       ]);
 
+      // Stats
       if (statsRes.ok) {
         const data = await statsRes.json();
-        setStats(data.data);
+        setStats(data.data || {});
+      } else if (!statsRes.ok && statsRes.status !== 404) {
+        throw new Error(`Erro ao carregar estatísticas (${statsRes.status})`);
       }
+
+      // Validations
       if (validationsRes.ok) {
         const data = await validationsRes.json();
-        setPendingValidations(data.data);
+        setPendingValidations(data.data || []);
+      } else if (!validationsRes.ok && validationsRes.status !== 404) {
+        throw new Error(`Erro ao carregar validações (${validationsRes.status})`);
       }
+
+      // Alerts
       if (alertsRes.ok) {
         const data = await alertsRes.json();
-        setAlerts(data.data);
+        setAlerts(data.data || []);
+      } else if (!alertsRes.ok && alertsRes.status !== 404) {
+        throw new Error(`Erro ao carregar alertas (${alertsRes.status})`);
       }
-    } catch (error) {
-      console.error('Erro ao buscar dados:', error);
+    } catch (err) {
+      console.error('Erro ao buscar dados:', err);
+      setError(err.message || 'Erro ao carregar dados do servidor');
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, REFRESH_INTERVAL);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   const handleValidation = async (validationId, approved) => {
     try {
+      setValidatingId(validationId);
       const response = await fetch(
-        `http://localhost:5000/api/v1/pharmacists/validations/${validationId}`,
+        `${API_BASE}/validations/${validationId}`,
         {
           method: 'PATCH',
           headers: {
@@ -73,24 +88,42 @@ export function PharmacistDashboard() {
         }
       );
 
-      if (response.ok) {
-        // Remover da lista e atualizar stats
-        setPendingValidations(prev => prev.filter(v => v._id !== validationId));
-        fetchData();
+      if (!response.ok) {
+        throw new Error(`Erro ao validar prescrição (${response.status})`);
       }
-    } catch (error) {
-      console.error('Erro ao validar:', error);
+
+      setPendingValidations(prev => prev.filter(v => v._id !== validationId));
+      await fetchData();
+    } catch (err) {
+      console.error('Erro ao validar:', err);
+      setError(err.message || 'Erro ao processar validação');
+    } finally {
+      setValidatingId(null);
     }
   };
 
   if (loading) {
-    return <div className="loading">Carregando...</div>;
+    return (
+      <div className="pharmacist-dashboard">
+        <SkeletonHeader />
+        <SkeletonStatsGrid />
+        <SkeletonContent />
+      </div>
+    );
   }
 
   return (
     <div className="pharmacist-dashboard">
       <header className="dashboard-header">
-        <h1>🧑‍⚕️ Dashboard do Farmacêutico</h1>
+        <div>
+          <h1>🧑‍⚕️ Dashboard do Farmacêutico</h1>
+          {error && (
+            <div className="error-banner">
+              <span>⚠️ {error}</span>
+              <button onClick={fetchData} className="retry-btn">Tentar Novamente</button>
+            </div>
+          )}
+        </div>
         <div className="status-indicator">
           <span className="dot online"></span>
           Online - Pronto para atender
@@ -129,7 +162,9 @@ export function PharmacistDashboard() {
           <h2>⏳ Validações Pendentes</h2>
           {pendingValidations.length === 0 ? (
             <div className="empty-state">
+              <div className="empty-icon">📋</div>
               <p>Nenhuma validação pendente</p>
+              <small>Tudo certo! Você está em dia com as análises.</small>
             </div>
           ) : (
             <div className="validations-list">
@@ -139,6 +174,7 @@ export function PharmacistDashboard() {
                   validation={validation}
                   onApprove={() => handleValidation(validation._id, true)}
                   onReject={() => handleValidation(validation._id, false)}
+                  isLoading={validatingId === validation._id}
                 />
               ))}
             </div>
@@ -149,7 +185,9 @@ export function PharmacistDashboard() {
           <h2>🚨 Alertas Recentes</h2>
           {alerts.length === 0 ? (
             <div className="empty-state">
+              <div className="empty-icon">✨</div>
               <p>Nenhum alerta no momento</p>
+              <small>Sistema funcionando perfeitamente.</small>
             </div>
           ) : (
             <div className="alerts-list">
@@ -159,6 +197,10 @@ export function PharmacistDashboard() {
             </div>
           )}
         </section>
+      </div>
+
+      <div className="refresh-indicator">
+        ↻ Próxima atualização em {Math.round(REFRESH_INTERVAL / 1000)}s
       </div>
     </div>
   );
@@ -177,7 +219,7 @@ function StatCard({ title, value, icon, color }) {
   );
 }
 
-function ValidationCard({ validation, onApprove, onReject }) {
+function ValidationCard({ validation, onApprove, onReject, isLoading }) {
   return (
     <div className="validation-card">
       <div className="header">
@@ -220,11 +262,21 @@ function ValidationCard({ validation, onApprove, onReject }) {
       </div>
 
       <div className="actions">
-        <button className="btn-approve" onClick={onApprove}>
-          ✓ Aprovar
+        <button 
+          className="btn-approve" 
+          onClick={onApprove}
+          disabled={isLoading}
+          title={isLoading ? 'Processando...' : 'Aprovar prescrição'}
+        >
+          {isLoading ? '⏳ Processando...' : '✓ Aprovar'}
         </button>
-        <button className="btn-reject" onClick={onReject}>
-          ✗ Recusar
+        <button 
+          className="btn-reject" 
+          onClick={onReject}
+          disabled={isLoading}
+          title={isLoading ? 'Processando...' : 'Recusar prescrição'}
+        >
+          {isLoading ? '⏳ Processando...' : '✗ Recusar'}
         </button>
       </div>
     </div>
@@ -263,6 +315,44 @@ function formatTime(dateString) {
   if (diff < 3600) return `Há ${Math.floor(diff / 60)}m`;
   if (diff < 86400) return `Há ${Math.floor(diff / 3600)}h`;
   return date.toLocaleDateString('pt-BR');
+}
+
+// Skeleton Loaders para melhor UX durante carregamento
+function SkeletonHeader() {
+  return (
+    <div className="skeleton-header">
+      <div className="skeleton-text skeleton-title"></div>
+    </div>
+  );
+}
+
+function SkeletonStatsGrid() {
+  return (
+    <div className="skeleton-stats-grid">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="skeleton-card"></div>
+      ))}
+    </div>
+  );
+}
+
+function SkeletonContent() {
+  return (
+    <div className="skeleton-content">
+      <div className="skeleton-section">
+        <div className="skeleton-text skeleton-heading"></div>
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="skeleton-card skeleton-validation"></div>
+        ))}
+      </div>
+      <div className="skeleton-section">
+        <div className="skeleton-text skeleton-heading"></div>
+        {[...Array(2)].map((_, i) => (
+          <div key={i} className="skeleton-card skeleton-alert"></div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default PharmacistDashboard

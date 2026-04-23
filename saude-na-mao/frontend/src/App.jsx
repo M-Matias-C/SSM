@@ -124,16 +124,16 @@ function AppContent() {
           <Route
             path="/farmaceutico"
             element={
-              <PrivateRoute requiredRole="farmacia">
-                <Farmaceutico />
+              <PrivateRoute requiredRole="farmaceutico">
+                <PharmacistDashboard />
               </PrivateRoute>
             }
           />
           <Route
-            path="/dashboard/farmaceutico"
+            path="/dono-farmacia"
             element={
-              <PrivateRoute requiredRole="farmacia">
-                <PharmacistDashboard />
+              <PrivateRoute requiredRole="dono_farmacia">
+                <Farmaceutico />
               </PrivateRoute>
             }
           />

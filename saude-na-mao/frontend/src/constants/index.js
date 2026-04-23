@@ -116,6 +116,8 @@ export const SELF_REGISTER_TYPES = [
   { value: 'dono_farmacia', label: 'Dono de Farmácia', description: 'Cadastrar e gerenciar sua farmácia' },
 ]
 
+export const PHARMACY_OWNER_ROLES = ['dono_farmacia']
+export const PHARMACIST_ROLES = ['farmaceutico']
 export const PHARMACY_ROLES = ['dono_farmacia', 'farmaceutico']
 
 export const VALIDATION_RULES = {

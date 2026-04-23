@@ -1,7 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { ShoppingCart, User, LogOut, Menu, X, Home, Package2, MessageSquare, FileText, Shield, Store, ClipboardList, Truck, Heart } from 'lucide-react'
 import { useAuthStore, useCartStore, useUiStore, useFavoritesStore } from '../stores/store'
-import { PHARMACY_ROLES } from '../constants'
 import AccessibilityMenu from './AccessibilityMenu'
 import DarkModeToggle from './DarkModeToggle'
 import Logger from '../utils/logger'
@@ -17,7 +16,8 @@ export default function Navbar() {
 
   const cartCount = getItemCount()
   const isAuth = isAuthenticated()
-  const isPharmacyRole = isAuth && PHARMACY_ROLES.includes(user?.role)
+  const isPharmacist = isAuth && user?.role === 'farmaceutico'
+  const isPharmacyOwner = isAuth && user?.role === 'dono_farmacia'
   const isDriver = isAuth && user?.role === 'entregador'
   const isClient = isAuth && user?.role === 'cliente'
 
@@ -52,7 +52,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex justify-between items-center h-16">
           <Link 
-            to={isPharmacyRole ? '/farmaceutico' : isDriver ? '/entregas' : '/'} 
+            to={isPharmacist ? '/farmaceutico' : isPharmacyOwner ? '/dono-farmacia' : isDriver ? '/entregas' : '/'} 
             className="flex items-center gap-2.5 group"
             onClick={() => closeMobileMenu()}
           >
@@ -67,11 +67,18 @@ export default function Navbar() {
 
           {/* Desktop nav links */}
           <div className="hidden md:flex items-center gap-1">
-            {isPharmacyRole ? (
+            {isPharmacist ? (
               <>
                 <Link to="/farmaceutico" className={navLinkClass('/farmaceutico')}>
                   <ClipboardList className="w-4 h-4" />
                   Painel
+                </Link>
+              </>
+            ) : isPharmacyOwner ? (
+              <>
+                <Link to="/dono-farmacia" className={navLinkClass('/dono-farmacia')}>
+                  <Store className="w-4 h-4" />
+                  Farmácia
                 </Link>
               </>
             ) : isDriver ? (
@@ -145,7 +152,7 @@ export default function Navbar() {
 
             {isAuth && user ? (
               <div className="flex items-center gap-2">
-                {isPharmacyRole ? (
+                {isPharmacist || isPharmacyOwner ? (
                   <Link
                     to="/perfil"
                     className="flex items-center gap-2 text-sm text-gray-700 hover:text-primary transition-colors px-3 py-2 rounded-xl hover:bg-primary/5"
@@ -153,7 +160,7 @@ export default function Navbar() {
                     <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
                       <Shield className="w-4 h-4 text-emerald-600" />
                     </div>
-                    <span className="font-medium">{user.nome?.split(' ')[0] || 'Farmacêutico'}</span>
+                    <span className="font-medium">{user.nome?.split(' ')[0] || (isPharmacist ? 'Farmacêutico' : 'Dono Farmácia')}</span>
                   </Link>
                 ) : isDriver ? (
                   <Link
@@ -248,7 +255,7 @@ export default function Navbar() {
         {/* Mobile menu */}
         {isMobileMenuOpen && (
           <div id="mobile-menu" className="md:hidden border-t border-gray-100 py-3 space-y-1 animate-slide-down" role="menu">
-            {isPharmacyRole ? (
+            {isPharmacist ? (
               <>
                 <button
                   onClick={() => handleNavClick('/farmaceutico')}
@@ -257,6 +264,25 @@ export default function Navbar() {
                   }`}
                 >
                   <ClipboardList className="w-4 h-4" /> Painel Farmacêutico
+                </button>
+                <button
+                  onClick={() => handleNavClick('/perfil')}
+                  className={`flex items-center gap-3 w-full text-left px-4 py-2.5 rounded-xl text-sm transition ${
+                    isActive('/perfil') ? 'bg-primary/10 text-primary font-medium' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <User className="w-4 h-4" /> Meu Perfil
+                </button>
+              </>
+            ) : isPharmacyOwner ? (
+              <>
+                <button
+                  onClick={() => handleNavClick('/dono-farmacia')}
+                  className={`flex items-center gap-3 w-full text-left px-4 py-2.5 rounded-xl text-sm transition ${
+                    isActive('/dono-farmacia') ? 'bg-primary/10 text-primary font-medium' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <Store className="w-4 h-4" /> Minha Farmácia
                 </button>
                 <button
                   onClick={() => handleNavClick('/perfil')}
