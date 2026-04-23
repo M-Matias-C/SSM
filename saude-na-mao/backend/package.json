@@ -6,7 +6,14 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "jest --forceExit --detectOpenHandles --verbose"
+    "test": "jest --forceExit --detectOpenHandles --verbose",
+    "test:integration": "jest src/tests/integration*.test.js --forceExit --verbose",
+    "test:fraud": "jest src/tests/fraud*.test.js --forceExit --verbose",
+    "test:e2e": "playwright test",
+    "test:all": "jest --forceExit --verbose && npm run test:e2e",
+    "test:coverage": "jest --forceExit --coverage --coverageDirectory=coverage",
+    "test:fraud:watch": "jest src/tests/fraud*.test.js --watch --verbose",
+    "test:integration:watch": "jest src/tests/integration*.test.js --watch --verbose"
   },
   "keywords": [],
   "author": "",

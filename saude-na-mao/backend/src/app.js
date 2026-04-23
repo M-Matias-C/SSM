@@ -23,6 +23,7 @@ const reviewRoutes = require("./routes/reviewRoutes");
 const deliveryRoutes = require("./routes/deliveryRoutes");
 const drugRoutes = require("./routes/drugRoutes");
 const auditRoutes = require("./routes/auditRoutes");
+const trackingRoutes = require("./routes/trackingRoutes");
 const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
@@ -95,6 +96,9 @@ app.use("/api/v1/medicamentos", drugRoutes);
 
 app.use("/api/v1/audit", auditRoutes);
 app.use("/api/v1/auditoria", auditRoutes);
+
+app.use("/api/v1/tracking", trackingRoutes);
+app.use("/api/v1/rastreamento", trackingRoutes);
 
 app.use((req, res, next) => {
   res.status(404).json({ success: false, message: "Rota não encontrada" });

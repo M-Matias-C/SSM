@@ -21,6 +21,8 @@ import Registro from './pages/Registro'
 import Perfil from './pages/Perfil'
 import Pedidos from './pages/Pedidos'
 import Rastreamento from './pages/Rastreamento'
+import MedicineTracking from './pages/MedicineTracking'
+import QRVerification from './components/QRVerification'
 import Suporte from './pages/Suporte'
 import Admin from './pages/Admin'
 import Farmaceutico from './pages/Farmaceutico'
@@ -89,7 +91,15 @@ function AppContent() {
             path="/rastreamento/:id"
             element={
               <PrivateRoute excludeRoles={['farmacia']}>
-                <Rastreamento />
+                <MedicineTracking />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/verificar-medicamento"
+            element={
+              <PrivateRoute>
+                <QRVerification />
               </PrivateRoute>
             }
           />
